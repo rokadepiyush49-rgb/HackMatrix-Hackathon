@@ -1,0 +1,39 @@
+# One-command stack for machines with Docker. Without Docker, use the Makefile
+# targets against a local PostgreSQL (see README → Quickstart).
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: sutra
+      POSTGRES_USER: sutra
+      POSTGRES_PASSWORD: sutra-local-dev
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sutra"]
+      interval: 5s
+      retries: 10
+
+  api:
+    build: { context: ., dockerfile: docker/api.Dockerfile }
+    environment:
+      SUTRA_DATABASE_URL: postgresql+psycopg://sutra:sutra-local-dev@postgres:5432/sutra
+      SUTRA_JWT_SECRET: ${SUTRA_JWT_SECRET:-change-me-local-dev-only}
+      SUTRA_PII_HMAC_KEY: ${SUTRA_PII_HMAC_KEY:-change-me-local-dev-only}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    command: >
+      sh -c "cd backend && alembic upgrade head &&
+             cd .. && python -m app.cli demo &&
+             cd backend && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    ports: ["8000:8000"]
+    depends_on: { postgres: { condition: service_healthy } }
+
+  web:
+    build: { context: ., dockerfile: docker/web.Dockerfile }
+    environment:
+      SUTRA_API_URL: http://api:8000
+    ports: ["3000:3000"]
+    depends_on: [api]
+
+volumes:
+  pgdata:
