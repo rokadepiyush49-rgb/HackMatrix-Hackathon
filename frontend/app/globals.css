@@ -1,0 +1,263 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+  SUTRA design tokens — pastel "threads & doors" language shared with Disha
+  (Career Path Project): periwinkle canvas, very round white cards, ink pills,
+  orchid / tangerine / sunflower / mint accents, Poppins throughout.
+  Light ("Canvas") is the default; dark ("Night") keeps the same accents on deep indigo.
+  --primary is ink: the dominant action on a surface is a black pill.
+  Status colour is semantic, never decorative:
+    threat  (coral)      suspicious / prosecution / money at risk
+    amber   (tangerine)  uncertainty / contested / open questions
+    ok      (mint)       explained / defence / verified
+    ai      (orchid)     model or agent insight
+    info    (periwinkle) links, navigation, neutral data
+  Tone text colours are darkened from the pastel so tinted chips stay >= 4.5:1.
+*/
+:root {
+  --bg: #dce3fb;
+  --bg-grid: #c9d4fb;
+  --panel: #ffffff;
+  --panel-2: #f3f4f8;
+  --raised: #ffffff;
+  --panel-border: rgb(255 255 255 / 0);
+  --line: #e6e8f2;
+  --line-strong: #c9cde0;
+  --ink: #111114;
+  --ink-2: #2a2a33;
+  --muted: #5f6376;
+  --faint: #737789;
+  --primary: #111114;
+  --primary-pressed: #2a2a33;
+  --on-primary: #ffffff;
+  --threat: #b8322a;
+  --threat-soft: #ffd9d4;
+  --amber: #9f4a00;
+  --amber-soft: #ffe0c2;
+  --ok: #15703f;
+  --ok-soft: #cdf1dc;
+  --ai: #8e2a99;
+  --ai-soft: #f8d3f9;
+  --info: #3b54c9;
+  --info-soft: #dfe5fd;
+  --shadow: 0 10px 30px -12px rgb(31 41 90 / 0.18);
+  color-scheme: light;
+}
+
+.dark {
+  --bg: #0f1226;
+  --bg-grid: #262c4d;
+  --panel: #171b34;
+  --panel-2: #1f2442;
+  --raised: #232946;
+  --panel-border: #272d4f;
+  --line: #2a3052;
+  --line-strong: #3d4472;
+  --ink: #f4f5ff;
+  --ink-2: #d5d8ea;
+  --muted: #a6abc6;
+  --faint: #8d92ae;
+  --primary: #f4f5ff;
+  --primary-pressed: #dfe2f5;
+  --on-primary: #111114;
+  --threat: #ff8a7f;
+  --threat-soft: #3a1b26;
+  --amber: #ffad66;
+  --amber-soft: #3a2718;
+  --ok: #7ed9a6;
+  --ok-soft: #16332a;
+  --ai: #f0a0f2;
+  --ai-soft: #36204a;
+  --info: #9bb0f8;
+  --info-soft: #1d2750;
+  --shadow: 0 10px 30px -12px rgb(0 0 0 / 0.5);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-grid: var(--bg-grid);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
+  --color-raised: var(--raised);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-primary: var(--primary);
+  --color-primary-pressed: var(--primary-pressed);
+  --color-on-primary: var(--on-primary);
+  --color-threat: var(--threat);
+  --color-threat-soft: var(--threat-soft);
+  --color-amber: var(--amber);
+  --color-amber-soft: var(--amber-soft);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-ai: var(--ai);
+  --color-ai-soft: var(--ai-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+
+  --font-display: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --shadow-panel: var(--shadow);
+  --radius-panel: 1.75rem;
+}
+
+/* Moodboard accents — the same pastels in both themes, always with ink text on top. */
+@theme {
+  --color-periwinkle: #9bb0f8;
+  --color-periwinkle-soft: #c9d4fb;
+  --color-periwinkle-deep: #6f86e8;
+  --color-orchid: #f0a0f2;
+  --color-orchid-soft: #f8d3f9;
+  --color-tangerine: #ff9b3f;
+  --color-tangerine-soft: #ffd9b5;
+  --color-sunflower: #f5c84c;
+  --color-sunflower-soft: #fbe7a8;
+  --color-mint: #7ed9a6;
+  --color-mint-soft: #cdf1dc;
+  --color-coral: #ff6b5e;
+  --color-coral-soft: #ffd2cd;
+  --color-mist: #f3f4f8;
+  --color-paper: #ffffff;
+  --color-pastel-ink: #111114;
+
+  --radius-blob: 2.75rem;
+
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-twinkle: twinkle 2.4s ease-in-out infinite;
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0) }
+    50% { transform: translateY(-8px) }
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: 1; transform: scale(1) }
+    50% { opacity: .45; transform: scale(.8) }
+  }
+}
+
+/* Very round geometry: pills for actions and badges, soft 12–32px corners elsewhere. */
+@theme {
+  --radius: 0.5rem;
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
+  --radius-2xl: 26px;
+  --radius-3xl: 32px;
+
+  /* Elevation — soft, periwinkle-tinted shadows */
+  --shadow-xs: 0 1px 2px 0 rgb(31 41 90 / 0.06);
+  --shadow-sm: 0 4px 14px -6px rgb(31 41 90 / 0.14);
+  --shadow-md: 0 10px 30px -12px rgb(31 41 90 / 0.18);
+  --shadow-lg: 0 18px 40px -16px rgb(31 41 90 / 0.28);
+  --shadow-xl: 0 18px 40px -16px rgb(31 41 90 / 0.28);
+  --shadow-2xl: 0 28px 60px -20px rgb(31 41 90 / 0.36);
+}
+
+@layer base {
+  html,
+  body {
+    height: 100%;
+  }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection {
+    background: var(--color-orchid);
+    color: var(--color-pastel-ink);
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-tangerine);
+    outline-offset: 3px;
+    border-radius: 12px;
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-strong) transparent;
+  }
+}
+
+@layer components {
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: var(--radius-panel);
+    box-shadow: var(--shadow);
+  }
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.4;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+  .display {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+}
+
+/* React Flow — themed through tokens */
+.react-flow {
+  --xy-background-color: transparent;
+  --xy-edge-stroke: var(--line-strong);
+  --xy-node-border-radius: 14px;
+  --xy-controls-button-background-color: var(--raised);
+  --xy-controls-button-color: var(--ink-2);
+  --xy-controls-button-border-color: var(--line);
+  --xy-controls-button-background-color-hover: var(--panel-2);
+  --xy-minimap-background-color: var(--panel);
+  --xy-attribution-background-color: transparent;
+}
+.react-flow__attribution {
+  display: none;
+}
+.react-flow__edge-path {
+  stroke-linecap: round;
+}
+.react-flow__controls {
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+input[type="range"] {
+  accent-color: var(--ink);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
