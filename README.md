@@ -344,10 +344,10 @@ HackMatrix/
 
 | Part | Area | Member |
 |---|---|---|
-| 1 | Platform: API, data model, migrations, docs | _Name_ |
-| 2 | Detection engine, AI Council and ML | _Name_ |
-| 3 | Frontend core: design system, app shell, shared components | _Name_ |
-| 4 | Frontend screens | _Name_ |
+| 1 | Platform: API, data model, migrations, docs | Ajaya Nandiyawar |
+| 2 | Detection engine, AI Council and ML | Raghav Deo |
+| 3 | Frontend core: design system, app shell, shared components | Piyush Rokade |
+| 4 | Frontend screens | Riya Saroch |
 
 ---
 
