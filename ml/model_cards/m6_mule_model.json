@@ -1,0 +1,26 @@
+{
+  "model": "M6 mule-likeness",
+  "algorithm": "LightGBM (200 trees, 15 leaves) with TreeSHAP",
+  "features": [
+    "age_days",
+    "presenceless",
+    "self_approved",
+    "n_senders",
+    "log_inflow",
+    "pass_through_share",
+    "atm_share",
+    "device_shared",
+    "phone_shared",
+    "retention"
+  ],
+  "metrics": {
+    "roc_auc_oof": 1.0,
+    "pr_auc_oof": 1.0,
+    "precision_at_k": 1.0,
+    "k": 39,
+    "positives": 39,
+    "negatives": 4502,
+    "note": "Out-of-fold metrics on an independent synthetic world (seed 7). Not real-bank accuracy."
+  },
+  "train_seed": 7
+}
