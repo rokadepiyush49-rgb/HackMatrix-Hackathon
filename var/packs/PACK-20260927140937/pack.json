@@ -1,0 +1,2095 @@
+{
+  "pack_version": "1.0",
+  "generated_at": "2026-09-27T14:09:37.324287+00:00",
+  "generated_by": "ananya",
+  "case": {
+    "id": "CASE-0921-001",
+    "state": "INVESTIGATING",
+    "priority": "P1",
+    "assignee": "ananya",
+    "opened_at": "2026-09-27T19:39:37.290118+05:30"
+  },
+  "sections": {
+    "01_executive_summary": {
+      "claim": "Employee-enabled takeover of a dormant account with layering through accounts the same employee opened",
+      "summary": "EMP-0417 used an expired override to changed A-5520's contact details after hours; \u20b914.70 L left 47 min later into accounts EMP-0417 opened.",
+      "priority": "P1",
+      "lattice_rule": "6 dimensions High (Transaction, Employee behaviour, Access, Network, Temporal, Relationship), evidenced by 7 independent systems, no alibi, funds still recoverable \u2192 P1",
+      "amount_at_risk": 1470000.0,
+      "access_to_money_s": 2812,
+      "attribution": {
+        "note": "Attribution to a person is not established \u2014 credential compromise has not been ruled out",
+        "person_level": false
+      }
+    },
+    "02_chain_timeline": [
+      {
+        "id": "CH-4476:01",
+        "seq": 1,
+        "code": "E0",
+        "event_type": "ENTITLEMENT",
+        "event_id": "ENT-00243",
+        "t": "2026-09-12T11:05:00+05:30",
+        "title": "Temp override granted",
+        "detail": "MOBILE_UPDATE_OVERRIDE via REQ-3391; meant to expire 14 Sep, never revoked",
+        "lane": "IAM",
+        "amount": null,
+        "evidence_codes": [
+          "EV-103"
+        ],
+        "alibi": null
+      },
+      {
+        "id": "CH-4476:02",
+        "seq": 2,
+        "code": "E1",
+        "event_type": "SESSION",
+        "event_id": "S-5591",
+        "t": "2026-09-21T21:47:10+05:30",
+        "title": "Off-hours login",
+        "detail": "VPN session from LAP-221 (Pune)",
+        "lane": "SOC",
+        "amount": null,
+        "evidence_codes": [
+          "EV-105",
+          "EV-106",
+          "EV-108",
+          "EV-109"
+        ],
+        "alibi": {
+          "checked": [
+            {
+              "ok": false,
+              "note": "No ticket for this customer in the 72 h before",
+              "template": "TICKET"
+            },
+            {
+              "ok": false,
+              "note": "Customer is not in this employee's portfolio",
+              "template": "PORTFOLIO"
+            },
+            {
+              "ok": false,
+              "note": "No queue item assigned for this account",
+              "template": "QUEUE"
+            },
+            {
+              "ok": false,
+              "note": "No branch token, eKYC or call-centre record for this customer nearby",
+              "template": "INTERACTION"
+            },
+            {
+              "ok": false,
+              "note": "No rostered shift covers this time (last shift ended 21 Sep 18:30)",
+              "template": "ROSTER"
+            }
+          ],
+          "verdict": "UNEXPLAINED",
+          "timing_ok": false,
+          "purpose_ok": false,
+          "reasons_found": 0
+        }
+      },
+      {
+        "id": "CH-4476:03",
+        "seq": 3,
+        "code": "E2",
+        "event_type": "ACCESS",
+        "event_id": "AE-0000418",
+        "t": "2026-09-21T21:49:05+05:30",
+        "title": "Account viewed",
+        "detail": "A-5520 (inoperative) \u00b7 alibi 0 of 5",
+        "lane": "SOC",
+        "amount": null,
+        "evidence_codes": [
+          "EV-105",
+          "EV-110",
+          "EV-111"
+        ],
+        "alibi": {
+          "checked": [
+            {
+              "ok": false,
+              "note": "No ticket for this customer in the 72 h before",
+              "template": "TICKET"
+            },
+            {
+              "ok": false,
+              "note": "Customer is not in this employee's portfolio",
+              "template": "PORTFOLIO"
+            },
+            {
+              "ok": false,
+              "note": "No queue item assigned for this account",
+              "template": "QUEUE"
+            },
+            {
+              "ok": false,
+              "note": "No branch token, eKYC or call-centre record for this customer nearby",
+              "template": "INTERACTION"
+            },
+            {
+              "ok": false,
+              "note": "No rostered shift covers this time (last shift ended 21 Sep 18:30)",
+              "template": "ROSTER"
+            }
+          ],
+          "verdict": "UNEXPLAINED",
+          "timing_ok": false,
+          "purpose_ok": false,
+          "reasons_found": 0
+        }
+      },
+      {
+        "id": "CH-4476:04",
+        "seq": 4,
+        "code": "E3",
+        "event_type": "STATE_CHANGE",
+        "event_id": "SC-000001",
+        "t": "2026-09-21T21:52:07+05:30",
+        "title": "Mobile no. changed",
+        "detail": "+91 \u2022\u2022\u2022\u2022\u2022 7773 \u2192 +91 \u2022\u2022\u2022\u2022\u2022 5399 \u00b7 auth OVERRIDE",
+        "lane": "SOC",
+        "amount": null,
+        "evidence_codes": [
+          "EV-105",
+          "EV-112",
+          "EV-113",
+          "EV-114"
+        ],
+        "alibi": {
+          "checked": [
+            {
+              "ok": false,
+              "note": "No ticket for this customer in the 72 h before",
+              "template": "TICKET"
+            },
+            {
+              "ok": false,
+              "note": "Customer is not in this employee's portfolio",
+              "template": "PORTFOLIO"
+            },
+            {
+              "ok": false,
+              "note": "No queue item assigned for this account",
+              "template": "QUEUE"
+            },
+            {
+              "ok": false,
+              "note": "No branch token, eKYC or call-centre record for this customer nearby",
+              "template": "INTERACTION"
+            },
+            {
+              "ok": false,
+              "note": "No rostered shift covers this time (last shift ended 21 Sep 18:30)",
+              "template": "ROSTER"
+            }
+          ],
+          "verdict": "UNEXPLAINED",
+          "timing_ok": false,
+          "purpose_ok": false,
+          "reasons_found": 0
+        }
+      },
+      {
+        "id": "CH-4476:05",
+        "seq": 5,
+        "code": "E3\u2032",
+        "event_type": "STATE_CHANGE",
+        "event_id": "SC-000002",
+        "t": "2026-09-21T21:55:30+05:30",
+        "title": "Limit raised",
+        "detail": "\u20b91 L \u2192 \u20b95 L \u00b7 auth OVERRIDE",
+        "lane": "SOC",
+        "amount": null,
+        "evidence_codes": [
+          "EV-105",
+          "EV-115",
+          "EV-116",
+          "EV-117"
+        ],
+        "alibi": {
+          "checked": [
+            {
+              "ok": false,
+              "note": "No ticket for this customer in the 72 h before",
+              "template": "TICKET"
+            },
+            {
+              "ok": false,
+              "note": "Customer is not in this employee's portfolio",
+              "template": "PORTFOLIO"
+            },
+            {
+              "ok": false,
+              "note": "No queue item assigned for this account",
+              "template": "QUEUE"
+            },
+            {
+              "ok": false,
+              "note": "No branch token, eKYC or call-centre record for this customer nearby",
+              "template": "INTERACTION"
+            },
+            {
+              "ok": false,
+              "note": "No rostered shift covers this time (last shift ended 21 Sep 18:30)",
+              "template": "ROSTER"
+            }
+          ],
+          "verdict": "UNEXPLAINED",
+          "timing_ok": false,
+          "purpose_ok": false,
+          "reasons_found": 0
+        }
+      },
+      {
+        "id": "CH-4476:06",
+        "seq": 6,
+        "code": "E4",
+        "event_type": "BENEFICIARY",
+        "event_id": "BN-009504",
+        "t": "2026-09-21T22:12:05+05:30",
+        "title": "3 payees added",
+        "detail": "3 new payee(s) \u00b7 new device D-9F2 \u00b7 password reset",
+        "lane": "FRAUD",
+        "amount": null,
+        "evidence_codes": [
+          "EV-118",
+          "EV-119",
+          "EV-120",
+          "EV-121"
+        ],
+        "alibi": null
+      },
+      {
+        "id": "CH-4476:07",
+        "seq": 7,
+        "code": "E5",
+        "event_type": "TXN",
+        "event_id": "TX-0000564",
+        "t": "2026-09-21T22:34:02+05:30",
+        "title": "\u20b914.70 L out",
+        "detail": "3 \u00d7 \u20b94.90 L via IMPS to A-7731, A-7768, X-8120",
+        "lane": "FRAUD",
+        "amount": 1470000.0,
+        "evidence_codes": [
+          "EV-101",
+          "EV-102",
+          "EV-122",
+          "EV-123",
+          "EV-124",
+          "EV-130",
+          "EV-131",
+          "EV-132",
+          "EV-133"
+        ],
+        "alibi": null
+      },
+      {
+        "id": "CH-4476:08",
+        "seq": 8,
+        "code": "E5\u2032",
+        "event_type": "TXN",
+        "event_id": "TX-0000567",
+        "t": "2026-09-21T22:58:10+05:30",
+        "title": "Forwarded",
+        "detail": "\u20b94.69 L A-7731 \u2192 A-6604 (RK Traders)",
+        "lane": "AML",
+        "amount": 469000.0,
+        "evidence_codes": [
+          "EV-125",
+          "EV-127"
+        ],
+        "alibi": null
+      },
+      {
+        "id": "CH-4476:09",
+        "seq": 9,
+        "code": "E6",
+        "event_type": "TXN",
+        "event_id": "TX-0000569",
+        "t": "2026-09-21T23:14:30+05:30",
+        "title": "Loop closes",
+        "detail": "\u20b94.71 L back from A-7768 to A-6604",
+        "lane": "AML",
+        "amount": 471000.0,
+        "evidence_codes": [
+          "EV-126",
+          "EV-128",
+          "EV-129"
+        ],
+        "alibi": null
+      },
+      {
+        "id": "CH-4476:10",
+        "seq": 10,
+        "code": "E5\u2032",
+        "event_type": "TXN",
+        "event_id": "TX-0000571",
+        "t": "2026-09-21T23:40:02+05:30",
+        "title": "Forwarded",
+        "detail": "\u20b95 L A-6604 \u2192 X-9901 (Shree Bullion House)",
+        "lane": "AML",
+        "amount": 500000.0,
+        "evidence_codes": [
+          "EV-125",
+          "EV-127"
+        ],
+        "alibi": null
+      },
+      {
+        "id": "CH-4476:11",
+        "seq": 11,
+        "code": "E6",
+        "event_type": "TXN",
+        "event_id": "TX-0000572",
+        "t": "2026-09-21T23:58:02+05:30",
+        "title": "Loop closes",
+        "detail": "\u20b92.10 L back from A-6604 to A-7731",
+        "lane": "AML",
+        "amount": 210000.0,
+        "evidence_codes": [
+          "EV-126",
+          "EV-128",
+          "EV-129"
+        ],
+        "alibi": null
+      }
+    ],
+    "03_access_records": [
+      {
+        "code": "EV-106",
+        "kind": "SESSION",
+        "summary": "VPN session S-5591 by EMP-0417 from device LAP-221 (Pune), 21 Sep 21:47\u201321:58",
+        "source_system": "VPN gateway",
+        "source_table": "session",
+        "source_ref": "S-5591",
+        "reliability": "B",
+        "credibility": 1,
+        "observed_at": "2026-09-21T21:47:10+05:30",
+        "ingested_at": "2026-09-21T21:47:10+05:30",
+        "entities": [
+          "EMP-0417",
+          "LAP-221"
+        ],
+        "facts": {
+          "ip": "49.36.239.121",
+          "geo": "Pune",
+          "device": "LAP-221",
+          "channel": "VPN"
+        },
+        "supports": [
+          "claim"
+        ],
+        "rebuts": [],
+        "sha256": "c8b0cea6ea1ccbadef0a1ca1b5d5be1a984250f9447652ca9fe362f7a98804fa"
+      },
+      {
+        "code": "EV-110",
+        "kind": "ACCESS",
+        "summary": "EMP-0417 acct view on A-5520 (inoperative, balance \u20b93.90 L) \u2014 fields: balance, registered_mobile, nominee",
+        "source_system": "CBS app audit",
+        "source_table": "access_event",
+        "source_ref": "AE-0000418",
+        "reliability": "B",
+        "credibility": 1,
+        "observed_at": "2026-09-21T21:49:05+05:30",
+        "ingested_at": "2026-09-21T21:49:16+05:30",
+        "entities": [
+          "EMP-0417",
+          "A-5520",
+          "C-88213"
+        ],
+        "facts": {
+          "action": "ACCT_VIEW",
+          "fields": [
+            "balance",
+            "registered_mobile",
+            "nominee"
+          ],
+          "override": false
+        },
+        "supports": [
+          "claim"
+        ],
+        "rebuts": [],
+        "sha256": "c63eb8ceaee64a2ebf6254f07e144262c4511fbb403093cf9562de0c49b1377e"
+      },
+      {
+        "code": "EV-112",
+        "kind": "STATE_CHANGE",
+        "summary": "Registered mobile changed +91 \u2022\u2022\u2022\u2022\u2022 7773 \u2192 +91 \u2022\u2022\u2022\u2022\u2022 5399 on A-5520 by EMP-0417 with an override \u2014 no OTP to the old number",
+        "source_system": "CBS",
+        "source_table": "state_change",
+        "source_ref": "SC-000001",
+        "reliability": "A",
+        "credibility": 1,
+        "observed_at": "2026-09-21T21:52:07+05:30",
+        "ingested_at": "2026-09-21T21:53:37+05:30",
+        "entities": [
+          "A-5520",
+          "EMP-0417"
+        ],
+        "facts": {
+          "new": "+91 \u2022\u2022\u2022\u2022\u2022 5399",
+          "old": "+91 \u2022\u2022\u2022\u2022\u2022 7773",
+          "auth": "OVERRIDE",
+          "field": "REGISTERED_MOBILE"
+        },
+        "supports": [
+          "claim"
+        ],
+        "rebuts": [],
+        "sha256": "a54ac8c99b71f89ffc8154c22cbcce60846ef4b242ef69a9f4dd2f85b0aa034c"
+      },
+      {
+        "code": "EV-113",
+        "kind": "ACCESS",
+        "summary": "EMP-0417 mobile update on A-5520 (inoperative, balance \u20b93.90 L) \u2014 fields: registered_mobile \u00b7 override flag set",
+        "source_system": "CBS app audit",
+        "source_table": "access_event",
+        "source_ref": "AE-0000419",
+        "reliability": "B",
+        "credibility": 1,
+        "observed_at": "2026-09-21T21:52:07+05:30",
+        "ingested_at": "2026-09-21T21:52:51+05:30",
+        "entities": [
+          "EMP-0417",
+          "A-5520",
+          "C-88213"
+        ],
+        "facts": {
+          "action": "MOBILE_UPDATE",
+          "fields": [
+            "registered_mobile"
+          ],
+          "override": true
+        },
+        "supports": [
+          "claim"
+        ],
+        "rebuts": [],
+        "sha256": "14d18b5211dd2c2d016c92ede02ce049868a775111fdb6fc3945eeb0aad093de"
+      },
+      {
+        "code": "EV-115",
+        "kind": "STATE_CHANGE",
+        "summary": "Per-transaction limit changed \u20b91 L \u2192 \u20b95 L on A-5520 by EMP-0417 with an override \u2014 no OTP to the old number",
+        "source_system": "CBS",
+        "source_table": "state_change",
+        "source_ref": "SC-000002",
+        "reliability": "A",
+        "credibility": 1,
+        "observed_at": "2026-09-21T21:55:30+05:30",
+        "ingested_at": "2026-09-21T21:56:57+05:30",
+        "entities": [
+          "A-5520",
+          "EMP-0417"
+        ],
+        "facts": {
+          "new": "50000000",
+          "old": "10000000",
+          "auth": "OVERRIDE",
+          "field": "TXN_LIMIT"
+        },
+        "supports": [
+          "claim"
+        ],
+        "rebuts": [],
+        "sha256": "997681bb1b504c0aa81ec69ed3a18e023f7e1b636f20b3f2f0f4fb9db4232a89"
+      },
+      {
+        "code": "EV-116",
+        "kind": "ACCESS",
+        "summary": "EMP-0417 limit change on A-5520 (inoperative, balance \u20b93.90 L) \u2014 fields: txn_limit \u00b7 override flag set",
+        "source_system": "CBS app audit",
+        "source_table": "access_event",
+        "source_ref": "AE-0000420",
+        "reliability": "B",
+        "credibility": 1,
+        "observed_at": "2026-09-21T21:55:30+05:30",
+        "ingested_at": "2026-09-21T21:55:43+05:30",
+        "entities": [
+          "EMP-0417",
+          "A-5520",
+          "C-88213"
+        ],
+        "facts": {
+          "action": "LIMIT_CHANGE",
+          "fields": [
+            "txn_limit"
+          ],
+          "override": true
+        },
+        "supports": [
+          "claim"
+        ],
+        "rebuts": [],
+        "sha256": "b507f3d53f3e2f32ba295da16385e8a108186426352db4530e9558df429b05e4"
+      },
+      {
+        "code": "EV-118",
+        "kind": "STATE_CHANGE",
+        "summary": "Net-banking password reset on A-5520 by C-88213 via OTP sent to the new number",
+        "source_system": "Digital channel",
+        "source_table": "state_change",
+        "source_ref": "SC-000003",
+        "reliability": "A",
+        "credibility": 1,
+        "observed_at": "2026-09-21T22:06:40+05:30",
+        "ingested_at": "2026-09-21T22:08:01+05:30",
+        "entities": [
+          "A-5520",
+          "C-88213"
+        ],
+        "facts": {
+          "new": "reset",
+          "old": "\u2014",
+          "auth": "OTP_NEW_NUMBER",
+          "field": "PASSWORD"
+        },
+        "supports": [
+          "claim"
+        ],
+        "rebuts": [],
+        "sha256": "01563585cd82921d734eaf5e4c0cb91f3ca58c46115633fa42d5441cd92b0f78"
+      }
+    ],
+    "04_privilege_history": [
+      {
+        "code": "EV-103",
+        "kind": "ENTITLEMENT",
+        "summary": "MOBILE_UPDATE_OVERRIDE granted to EMP-0417 on 12 Sep 11:05 via REQ-3391 (\u201cPension camp \u2014 bulk mobile updates for senior citizens\u201d); intended expiry 14 Sep 23:59; never revoked",
+        "source_system": "IAM",
+        "source_table": "entitlement",
+        "source_ref": "ENT-00243",
+        "reliability": "A",
+        "credibility": 1,
+        "observed_at": "2026-09-12T11:05:00+05:30",
+        "ingested_at": "2026-09-12T11:05:00+05:30",
+        "entities": [
+          "EMP-0417"
+        ],
+        "facts": {
+          "permission": "MOBILE_UPDATE_OVERRIDE",
+          "revoked_at": "NaT",
+          "request_ref": "REQ-3391",
+          "intended_expiry": "2026-09-14 23:59:00+05:30"
+        },
+        "supports": [
+          "claim"
+        ],
+        "rebuts": [],
+        "sha256": "92b7721b79f79fc2eae2343c4872128282a64b14d01e76f8f1ba8e8b0ec8da5b"
+      },
+      {
+        "code": "EV-104",
+        "kind": "HR_RECORD",
+        "summary": "EMP-0417: 4 years' tenure; 0 prior alerts or cases",
+        "source_system": "HRMS",
+        "source_table": "employee",
+        "source_ref": "EMP-0417",
+        "reliability": "A",
+        "credibility": 1,
+        "observed_at": "2026-09-12T11:05:00+05:30",
+        "ingested_at": "2026-09-12T11:05:00+05:30",
+        "entities": [
+          "EMP-0417"
+        ],
+        "facts": {
+          "prior_alerts": 0,
+          "tenure_years": 4.1
+        },
+        "supports": [],
+        "rebuts": [
+          "claim"
+        ],
+        "sha256": "3b8f148438dca2e9ff36f77ab6fe4c1b45a48ec1948e0c616dab0cea799c7603"
+      },
+      {
+        "code": "EV-105",
+        "kind": "ROSTER",
+        "summary": "Roster for EMP-0417: No rostered shift covers this time (last shift ended 21 Sep 18:30)",
+        "source_system": "HRMS",
+        "source_table": "roster",
+        "source_ref": "EMP-0417:2026-09-21",
+        "reliability": "A",
+        "credibility": 1,
+        "observed_at": "2026-09-21T21:47:10+05:30",
+        "ingested_at": "2026-09-21T21:47:10+05:30",
+        "entities": [
+          "EMP-0417"
+        ],
+        "facts": {
+          "note": "No rostered shift covers this time (last shift ended 21 Sep 18:30)",
+          "on_duty": false
+        },
+        "supports": [
+          "claim"
+        ],
+        "rebuts": [],
+        "sha256": "d4006610daf2401af277db8929e368dfc1d7e6a32dd9108a93b26bcfcc52e46d"
+      },
+      {
+        "code": "EV-107",
+        "kind": "ASSET",
+        "summary": "Session device LAP-221 is the employee's own issued device",
+        "source_system": "IT asset register",
+        "source_table": "device",
+        "source_ref": "LAP-221",
+        "reliability": "B",
+        "credibility": 1,
+        "observed_at": "2026-09-21T21:47:10+05:30",
+        "ingested_at": "2026-09-21T21:47:10+05:30",
+        "entities": [
+          "EMP-0417",
+          "LAP-221"
+        ],
+        "facts": {
+          "device": "LAP-221"
+        },
+        "supports": [],
+        "rebuts": [
+          "attribution"
+        ],
+        "sha256": "793d4e2001b74806b0ed2a7996cbeab773dc73f82d8dc9c8b28fe7007b331aca"
+      }
+    ],
+    "05_transaction_trail": [
+      {
+        "code": "EV-119",
+        "kind": "BENEFICIARY",
+        "summary": "Payee A-7731 (Arjun Sathe, Kestrel UCB) added to A-5520 at 21 Sep 22:12:05",
+        "source_system": "Digital channel",
+        "source_table": "beneficiary",
+        "source_ref": "BN-009504",
+        "reliability": "A",
+        "credibility": 1,
+        "observed_at": "2026-09-21T22:12:05+05:30",
+        "ingested_at": "2026-09-21T22:12:05+05:30",
+        "entities": [
+          "A-5520",
+          "A-7731"
+        ],
+        "facts": {
+          "payee": "A-7731",
+          "holder": "Arjun Sathe",
+          "session": "S-000040"
+        },
+        "supports": [
+          "claim"
+        ],
+        "rebuts": [],
+        "sha256": "32cb1fd06da62194272b6efd6528e5adc6d091076f432e5c7d38019c8e276804"
+      },
+      {
+        "code": "EV-120",
+        "kind": "BENEFICIARY",
+        "summary": "Payee A-7768 (Vishal Bapat, Kestrel UCB) added to A-5520 at 21 Sep 22:13:22",
+        "source_system": "Digital channel",
+        "source_table": "beneficiary",
+        "source_ref": "BN-009505",
+        "reliability": "A",
+        "credibility": 1,
+        "observed_at": "2026-09-21T22:13:22+05:30",
+        "ingested_at": "2026-09-21T22:13:22+05:30",
+        "entities": [
+          "A-5520",
+          "A-7768"
+        ],
+        "facts": {
+          "payee": "A-7768",
+          "holder": "Vishal Bapat",
+          "session": "S-000040"
+        },
+        "supports": [
+          "claim"
+        ],
+        "rebuts": [],
+        "sha256": "26b1d5b71975eb6edc38ac7c15037735acf5f1ab843843313eb83d0efbd02a59"
+      },
+      {
+        "code": "EV-121",
+        "kind": "BENEFICIARY",
+        "summary": "Payee X-8120 (Deepak Traders, Meridian Bank) added to A-5520 at 21 Sep 22:14:39",
+        "source_system": "Digital channel",
+        "source_table": "beneficiary",
+        "source_ref": "BN-009506",
+        "reliability": "A",
+        "credibility": 1,
+        "observed_at": "2026-09-21T22:14:39+05:30",
+        "ingested_at": "2026-09-21T22:14:39+05:30",
+        "entities": [
+          "A-5520",
+          "X-8120"
+        ],
+        "facts": {
+          "payee": "X-8120",
+          "holder": "Deepak Traders",
+          "session": "S-000040"
+        },
+        "supports": [
+          "claim"
+        ],
+        "rebuts": [],
+        "sha256": "37ac2ad6459a6fc4d0c242f379f7296751f7c1d551b4ee8f4a9422daa8d79b63"
+      },
+      {
+        "code": "EV-122",
+        "kind": "TXN",
+        "summary": "\u20b94.90 L IMPS A-5520 \u2192 A-7731 (Arjun Sathe) at 21 Sep 22:34:02",
+        "source_system": "Payments switch",
+        "source_table": "txn",
+        "source_ref": "TX-0000564",
+        "reliability": "A",
+        "credibility": 1,
+        "observed_at": "2026-09-21T22:34:02+05:30",
+        "ingested_at": "2026-09-21T22:35:25+05:30",
+        "entities": [
+          "A-5520",
+          "A-7731"
+        ],
+        "facts": {
+          "amount": 490000.0,
+          "channel": "IMPS",
+          "narration": "IMPS transfer"
+        },
+        "supports": [
+          "claim"
+        ],
+        "rebuts": [],
+        "sha256": "c4751c05f0f4d24dc316d52307424af30ae1de5728c565b80ed3a5a187c33fa3"
+      },
+      {
+        "code": "EV-123",
+        "kind": "TXN",
+        "summary": "\u20b94.90 L IMPS A-5520 \u2192 A-7768 (Vishal Bapat) at 21 Sep 22:36:18",
+        "source_system": "Payments switch",
+        "source_table": "txn",
+        "source_ref": "TX-0000565",
+        "reliability": "A",
+        "credibility": 1,
+        "observed_at": "2026-09-21T22:36:18+05:30",
+        "ingested_at": "2026-09-21T22:37:17+05:30",
+        "entities": [
+          "A-5520",
+          "A-7768"
+        ],
+        "facts": {
+          "amount": 490000.0,
+          "channel": "IMPS",
+          "narration": "IMPS transfer"
+        },
+        "supports": [
+          "claim"
+        ],
+        "rebuts": [],
+        "sha256": "38a744d63c5cb3c36df3d28eb327728d5e85f4a455e9e8fead241c9e5abb94eb"
+      },
+      {
+        "code": "EV-124",
+        "kind": "TXN",
+        "summary": "\u20b94.90 L IMPS A-5520 \u2192 X-8120 (Deepak Traders) at 21 Sep 22:39:45",
+        "source_system": "Payments switch",
+        "source_table": "txn",
+        "source_ref": "TX-0000566",
+        "reliability": "A",
+        "credibility": 1,
+        "observed_at": "2026-09-21T22:39:45+05:30",
+        "ingested_at": "2026-09-21T22:41:13+05:30",
+        "entities": [
+          "A-5520",
+          "X-8120"
+        ],
+        "facts": {
+          "amount": 490000.0,
+          "channel": "IMPS",
+          "narration": "IMPS transfer"
+        },
+        "supports": [
+          "claim"
+        ],
+        "rebuts": [],
+        "sha256": "f7a39baca3e60020cc0836c188d17a2dcaa3fed082c39e17aa537b4082fc41e3"
+      },
+      {
+        "code": "EV-125",
+        "kind": "TXN",
+        "summary": "\u20b94.69 L IMPS A-7731 \u2192 A-6604 (RK Traders) at 21 Sep 22:58:10",
+        "source_system": "Payments switch",
+        "source_table": "txn",
+        "source_ref": "TX-0000567",
+        "reliability": "A",
+        "credibility": 1,
+        "observed_at": "2026-09-21T22:58:10+05:30",
+        "ingested_at": "2026-09-21T22:58:43+05:30",
+        "entities": [
+          "A-7731",
+          "A-6604"
+        ],
+        "facts": {
+          "amount": 469000.0,
+          "channel": "IMPS",
+          "narration": "Settlement"
+        },
+        "supports": [
+          "claim"
+        ],
+        "rebuts": [],
+        "sha256": "997c585c7d652054a90fee20c085cab98e2d7156cb0a6f5b3f030f9a8eec4887"
+      },
+      {
+        "code": "EV-126",
+        "kind": "TXN",
+        "summary": "\u20b94.71 L IMPS A-7768 \u2192 A-6604 (RK Traders) at 21 Sep 23:14:30",
+        "source_system": "Payments switch",
+        "source_table": "txn",
+        "source_ref": "TX-0000569",
+        "reliability": "A",
+        "credibility": 1,
+        "observed_at": "2026-09-21T23:14:30+05:30",
+        "ingested_at": "2026-09-21T23:15:44+05:30",
+        "entities": [
+          "A-7768",
+          "A-6604"
+        ],
+        "facts": {
+          "amount": 471000.0,
+          "channel": "IMPS",
+          "narration": "Settlement"
+        },
+        "supports": [
+          "claim"
+        ],
+        "rebuts": [],
+        "sha256": "d72ec33d7d6f74de8cfa69a9351cbc07cbecde90b6aaf8e05aa80e85c020de26"
+      },
+      {
+        "code": "EV-127",
+        "kind": "TXN",
+        "summary": "\u20b95 L RTGS A-6604 \u2192 X-9901 (Shree Bullion House) at 21 Sep 23:40:02",
+        "source_system": "Payments switch",
+        "source_table": "txn",
+        "source_ref": "TX-0000571",
+        "reliability": "A",
+        "credibility": 2,
+        "observed_at": "2026-09-21T23:40:02+05:30",
+        "ingested_at": "2026-09-21T23:41:01+05:30",
+        "entities": [
+          "A-6604",
+          "X-9901"
+        ],
+        "facts": {
+          "amount": 500000.0,
+          "channel": "RTGS",
+          "narration": "Purchase"
+        },
+        "supports": [
+          "claim"
+        ],
+        "rebuts": [],
+        "sha256": "dce896dc09065431d9b172d0dd41da053cdd2989b0f43ca39b49df29d0e7838c"
+      },
+      {
+        "code": "EV-128",
+        "kind": "TXN",
+        "summary": "\u20b92.10 L IMPS A-6604 \u2192 A-7731 (Arjun Sathe) at 21 Sep 23:58:02",
+        "source_system": "Payments switch",
+        "source_table": "txn",
+        "source_ref": "TX-0000572",
+        "reliability": "A",
+        "credibility": 1,
+        "observed_at": "2026-09-21T23:58:02+05:30",
+        "ingested_at": "2026-09-21T23:58:39+05:30",
+        "entities": [
+          "A-6604",
+          "A-7731"
+        ],
+        "facts": {
+          "amount": 210000.0,
+          "channel": "IMPS",
+          "narration": "Refund"
+        },
+        "supports": [
+          "claim"
+        ],
+        "rebuts": [],
+        "sha256": "888937e30dcafe20edbfbc7243294f32805f2ccdf533f865cd54d8517dbfbef9"
+      }
+    ],
+    "06_alibi_analysis": [
+      {
+        "code": "EV-111",
+        "kind": "ALIBI",
+        "summary": "Alibi unexplained: 0 of 5 reasons found. No ticket for this customer in the 72 h before; Customer is not in this employee's portfolio; No queue item assigned for this account",
+        "source_system": "SUTRA Alibi",
+        "source_table": "explanation",
+        "source_ref": "AE-0000418",
+        "reliability": "C",
+        "credibility": 2,
+        "observed_at": "2026-09-21T21:49:05+05:30",
+        "ingested_at": "2026-09-21T21:49:05+05:30",
+        "entities": [],
+        "facts": {
+          "checked": [
+            {
+              "ok": false,
+              "note": "No ticket for this customer in the 72 h before",
+              "template": "TICKET"
+            },
+            {
+              "ok": false,
+              "note": "Customer is not in this employee's portfolio",
+              "template": "PORTFOLIO"
+            },
+            {
+              "ok": false,
+              "note": "No queue item assigned for this account",
+              "template": "QUEUE"
+            },
+            {
+              "ok": false,
+              "note": "No branch token, eKYC or call-centre record for this customer nearby",
+              "template": "INTERACTION"
+            },
+            {
+              "ok": false,
+              "note": "No rostered shift covers this time (last shift ended 21 Sep 18:30)",
+              "template": "ROSTER"
+            }
+          ],
+          "verdict": "UNEXPLAINED"
+        },
+        "supports": [
+          "claim"
+        ],
+        "rebuts": [],
+        "sha256": "cee4bdf75d9e0b55bd309cdac95fb909769972455b3c72adbde92a04c90bf6d2"
+      },
+      {
+        "code": "EV-114",
+        "kind": "ALIBI",
+        "summary": "Alibi unexplained: 0 of 5 reasons found. No ticket for this customer in the 72 h before; Customer is not in this employee's portfolio; No queue item assigned for this account",
+        "source_system": "SUTRA Alibi",
+        "source_table": "explanation",
+        "source_ref": "AE-0000419",
+        "reliability": "C",
+        "credibility": 2,
+        "observed_at": "2026-09-21T21:52:07+05:30",
+        "ingested_at": "2026-09-21T21:52:07+05:30",
+        "entities": [],
+        "facts": {
+          "checked": [
+            {
+              "ok": false,
+              "note": "No ticket for this customer in the 72 h before",
+              "template": "TICKET"
+            },
+            {
+              "ok": false,
+              "note": "Customer is not in this employee's portfolio",
+              "template": "PORTFOLIO"
+            },
+            {
+              "ok": false,
+              "note": "No queue item assigned for this account",
+              "template": "QUEUE"
+            },
+            {
+              "ok": false,
+              "note": "No branch token, eKYC or call-centre record for this customer nearby",
+              "template": "INTERACTION"
+            },
+            {
+              "ok": false,
+              "note": "No rostered shift covers this time (last shift ended 21 Sep 18:30)",
+              "template": "ROSTER"
+            }
+          ],
+          "verdict": "UNEXPLAINED"
+        },
+        "supports": [
+          "claim"
+        ],
+        "rebuts": [],
+        "sha256": "669e4a8e04168a2571783208a5d0f6299a3e837a8ffbf5c07ca309d2e82bf589"
+      },
+      {
+        "code": "EV-117",
+        "kind": "ALIBI",
+        "summary": "Alibi unexplained: 0 of 5 reasons found. No ticket for this customer in the 72 h before; Customer is not in this employee's portfolio; No queue item assigned for this account",
+        "source_system": "SUTRA Alibi",
+        "source_table": "explanation",
+        "source_ref": "AE-0000420",
+        "reliability": "C",
+        "credibility": 2,
+        "observed_at": "2026-09-21T21:55:30+05:30",
+        "ingested_at": "2026-09-21T21:55:30+05:30",
+        "entities": [],
+        "facts": {
+          "checked": [
+            {
+              "ok": false,
+              "note": "No ticket for this customer in the 72 h before",
+              "template": "TICKET"
+            },
+            {
+              "ok": false,
+              "note": "Customer is not in this employee's portfolio",
+              "template": "PORTFOLIO"
+            },
+            {
+              "ok": false,
+              "note": "No queue item assigned for this account",
+              "template": "QUEUE"
+            },
+            {
+              "ok": false,
+              "note": "No branch token, eKYC or call-centre record for this customer nearby",
+              "template": "INTERACTION"
+            },
+            {
+              "ok": false,
+              "note": "No rostered shift covers this time (last shift ended 21 Sep 18:30)",
+              "template": "ROSTER"
+            }
+          ],
+          "verdict": "UNEXPLAINED"
+        },
+        "supports": [
+          "claim"
+        ],
+        "rebuts": [],
+        "sha256": "58bf4ffa30a547c04f8d825150556a58a04b44771c824c84540c1a69096bc7ee"
+      }
+    ],
+    "07_prosecution": {
+      "grounds": [
+        {
+          "code": "EV-101",
+          "text": "A-7731 opened 03 Aug 2026 by EMP-0417; KYC approved by EMP-0417 (mode BRANCH_DOCS)"
+        },
+        {
+          "code": "EV-102",
+          "text": "A-7768 opened 19 Aug 2026 by EMP-0417; KYC approved by EMP-0417 (mode BRANCH_DOCS)"
+        },
+        {
+          "code": "EV-103",
+          "text": "MOBILE_UPDATE_OVERRIDE granted to EMP-0417 on 12 Sep 11:05 via REQ-3391 (\u201cPension camp \u2014 bulk mobile updates for senior citizens\u201d); intended expiry 14 Sep 23:59; never revoked"
+        },
+        {
+          "code": "EV-105",
+          "text": "Roster for EMP-0417: No rostered shift covers this time (last shift ended 21 Sep 18:30)"
+        },
+        {
+          "code": "EV-106",
+          "text": "VPN session S-5591 by EMP-0417 from device LAP-221 (Pune), 21 Sep 21:47\u201321:58"
+        },
+        {
+          "code": "EV-108",
+          "text": "Access rhythm: session at Mon 21:47 has a shrunk personal share of 0.0002 (peer-weighted, leave-one-out). 0 of 66 prior sessions started after 20:00; peers 0.1%"
+        },
+        {
+          "code": "EV-109",
+          "text": "Navigation: session sequence in the bottom 0.1% for ops officers. Rarest transitions: START\u2192CUST_SEARCH (p=0.0011); MOBILE_UPDATE\u2192LIMIT_CHANGE (p=0.0131)"
+        },
+        {
+          "code": "EV-110",
+          "text": "EMP-0417 acct view on A-5520 (inoperative, balance \u20b93.90 L) \u2014 fields: balance, registered_mobile, nominee"
+        },
+        {
+          "code": "EV-111",
+          "text": "Alibi unexplained: 0 of 5 reasons found. No ticket for this customer in the 72 h before; Customer is not in this employee's portfolio; No queue item assigned for this account"
+        },
+        {
+          "code": "EV-112",
+          "text": "Registered mobile changed +91 \u2022\u2022\u2022\u2022\u2022 7773 \u2192 +91 \u2022\u2022\u2022\u2022\u2022 5399 on A-5520 by EMP-0417 with an override \u2014 no OTP to the old number"
+        },
+        {
+          "code": "EV-113",
+          "text": "EMP-0417 mobile update on A-5520 (inoperative, balance \u20b93.90 L) \u2014 fields: registered_mobile \u00b7 override flag set"
+        },
+        {
+          "code": "EV-114",
+          "text": "Alibi unexplained: 0 of 5 reasons found. No ticket for this customer in the 72 h before; Customer is not in this employee's portfolio; No queue item assigned for this account"
+        },
+        {
+          "code": "EV-115",
+          "text": "Per-transaction limit changed \u20b91 L \u2192 \u20b95 L on A-5520 by EMP-0417 with an override \u2014 no OTP to the old number"
+        },
+        {
+          "code": "EV-116",
+          "text": "EMP-0417 limit change on A-5520 (inoperative, balance \u20b93.90 L) \u2014 fields: txn_limit \u00b7 override flag set"
+        }
+      ],
+      "dimensions": [
+        {
+          "key": "transaction",
+          "label": "Transaction",
+          "level": "HIGH",
+          "summary": "\u20b914.70 L to 3 new payee(s) from a dormant account; 3 transfers at 98%\u201398% of the \u20b95 L per-transaction limit within 6 min",
+          "supporting": [
+            "EV-101",
+            "EV-102",
+            "EV-122",
+            "EV-123",
+            "EV-124",
+            "EV-130",
+            "EV-131",
+            "EV-132",
+            "EV-133"
+          ],
+          "contradicting": []
+        },
+        {
+          "key": "employee",
+          "label": "Employee behaviour",
+          "level": "HIGH",
+          "summary": "first session after 20:00 in 90 days; navigation bottom 0.1% for role",
+          "supporting": [
+            "EV-108",
+            "EV-109"
+          ],
+          "contradicting": [
+            "EV-104"
+          ]
+        },
+        {
+          "key": "access",
+          "label": "Access",
+          "level": "HIGH",
+          "summary": "no ticket, portfolio, queue or interaction; outside any rostered shift; override used; entitlement past its intended expiry",
+          "supporting": [
+            "EV-103",
+            "EV-111",
+            "EV-114",
+            "EV-117",
+            "EV-105",
+            "EV-112",
+            "EV-113",
+            "EV-114"
+          ],
+          "contradicting": [
+            "EV-107"
+          ]
+        },
+        {
+          "key": "network",
+          "label": "Network",
+          "level": "HIGH",
+          "summary": "64% of the payout moved on within the chain; money looped back; recipients belong to a mule cluster",
+          "supporting": [
+            "EV-125",
+            "EV-127",
+            "EV-126",
+            "EV-128",
+            "EV-129",
+            "EV-130",
+            "EV-131",
+            "EV-133"
+          ],
+          "contradicting": []
+        },
+        {
+          "key": "temporal",
+          "label": "Temporal",
+          "level": "HIGH",
+          "summary": "access \u2192 money in 47 min",
+          "supporting": [
+            "EV-105",
+            "EV-106",
+            "EV-108",
+            "EV-109",
+            "EV-101",
+            "EV-102",
+            "EV-122",
+            "EV-123",
+            "EV-124",
+            "EV-130",
+            "EV-131",
+            "EV-132",
+            "EV-133"
+          ],
+          "contradicting": []
+        },
+        {
+          "key": "relationship",
+          "label": "Relationship",
+          "level": "HIGH",
+          "summary": "2 recipient(s) opened and KYC-approved by EMP-0417; C-45228 matches EMP-0417's HR address",
+          "supporting": [
+            "EV-101",
+            "EV-102",
+            "EV-129"
+          ],
+          "contradicting": []
+        },
+        {
+          "key": "historical",
+          "label": "Historical",
+          "level": "LOW",
+          "summary": "0 prior alerts; 4 years' tenure",
+          "supporting": [],
+          "contradicting": [
+            "EV-104"
+          ]
+        }
+      ],
+      "warrant": {
+        "text": "ALIBI v1.0 + G2 v1.0 + M1 v1.0 + M2 v1.0 + M5 v1.0 + NEEDLE v1.0 + R2 v1.0 + R3 v1.0 + R4 v1.0 + R7 v1.0 + R9 v1.0",
+        "detectors": [
+          {
+            "code": "ALIBI",
+            "name": "Explanation-based access auditing",
+            "logic": "Purpose: ticket (semantic) \u00b7 portfolio \u00b7 queue \u00b7 interaction; timing: roster",
+            "version": "1.0"
+          },
+          {
+            "code": "G2",
+            "name": "Rapid pass-through",
+            "logic": "\u226590% of an inflow leaves the account within 60 min",
+            "version": "1.0"
+          },
+          {
+            "code": "M1",
+            "name": "Access-rhythm surprise",
+            "logic": "Personal hour-of-week session rate, shrunk toward peers (empirical Bayes)",
+            "version": "1.0"
+          },
+          {
+            "code": "M2",
+            "name": "Unusual navigation",
+            "logic": "Role-conditioned first-order Markov likelihood of the session's action sequence",
+            "version": "1.0"
+          },
+          {
+            "code": "M5",
+            "name": "Chain classifier",
+            "logic": "Standardised logistic regression + Platt calibration, exact contributions",
+            "version": "1.0"
+          },
+          {
+            "code": "NEEDLE",
+            "name": "Privilege-to-payment chain assembly",
+            "logic": "Time-respecting hop grammar ACCESS\u2192CHANGE\u2192SESSION\u2192PAYEE\u2192TXN\u2192TXN*, \u0394t \u2264 72 h per hop",
+            "version": "1.0"
+          },
+          {
+            "code": "R2",
+            "name": "Limit-hugging transfers",
+            "logic": "\u22652 outgoing transfers at \u226595% of the per-transaction limit in force, within 30 min",
+            "version": "1.0"
+          },
+          {
+            "code": "R3",
+            "name": "Dormant reactivation",
+            "logic": "Debit from an account inoperative for \u226524 months",
+            "version": "1.0"
+          },
+          {
+            "code": "R4",
+            "name": "Contact change \u2192 new payee \u2192 payout",
+            "logic": "Mobile/password change, then a new payee and a payment to it within 24 h",
+            "version": "1.0"
+          },
+          {
+            "code": "R7",
+            "name": "Override use",
+            "logic": "State change performed with an override flag",
+            "version": "1.0"
+          },
+          {
+            "code": "R9",
+            "name": "Expired entitlement used",
+            "logic": "Action authorised by an entitlement past its intended expiry",
+            "version": "1.0"
+          }
+        ]
+      },
+      "backing": [
+        "FIU-IND red-flag family: account takeover and money mules",
+        "Internal policy: contact changes need OTP to the old number or biometric eKYC",
+        "RBI Master Directions on Fraud Risk Management (2024): staff accountability"
+      ],
+      "qualifier": {
+        "text": "Corroborated across 8 independent systems \u00b7 chain classifier 1.00 (calibrated on synthetic data)",
+        "model": {
+          "p": 1.0,
+          "name": "M5 chain classifier",
+          "decision": 9.591,
+          "calibrated_on": "synthetic world, seed 7"
+        },
+        "systems": [
+          "CBS",
+          "CBS app audit",
+          "Digital channel",
+          "HRMS",
+          "IAM",
+          "IT asset register",
+          "Payments switch",
+          "VPN gateway"
+        ],
+        "n_systems": 8
+      }
+    },
+    "08_defence": {
+      "rebuttals": [
+        {
+          "note": "No ticket, IVR call, branch token or eKYC for C-88213 in the 7 days before",
+          "codes": [
+            "EV-111",
+            "EV-114",
+            "EV-117"
+          ],
+          "status": "refuted",
+          "hypothesis": "The customer asked for the change"
+        },
+        {
+          "note": "EMP-0417 was not on any roster at the time",
+          "codes": [
+            "EV-105"
+          ],
+          "status": "refuted",
+          "hypothesis": "Authorised extended duty (camp or overtime)"
+        },
+        {
+          "note": "Session came from the employee's own issued device \u2014 IT forensics needed before attributing to the person",
+          "codes": [
+            "EV-107"
+          ],
+          "status": "open",
+          "hypothesis": "Someone else used the employee's credentials"
+        },
+        {
+          "note": "Payees were added from a never-seen device after the staff-side change",
+          "codes": [
+            "EV-118",
+            "EV-119",
+            "EV-120",
+            "EV-121"
+          ],
+          "status": "refuted",
+          "hypothesis": "The customer set up these payees"
+        }
+      ],
+      "counter_evidence": [
+        {
+          "code": "EV-104",
+          "kind": "HR_RECORD",
+          "summary": "EMP-0417: 4 years' tenure; 0 prior alerts or cases",
+          "source_system": "HRMS",
+          "source_table": "employee",
+          "source_ref": "EMP-0417",
+          "reliability": "A",
+          "credibility": 1,
+          "observed_at": "2026-09-12T11:05:00+05:30",
+          "ingested_at": "2026-09-12T11:05:00+05:30",
+          "entities": [
+            "EMP-0417"
+          ],
+          "facts": {
+            "prior_alerts": 0,
+            "tenure_years": 4.1
+          },
+          "supports": [],
+          "rebuts": [
+            "claim"
+          ],
+          "sha256": "3b8f148438dca2e9ff36f77ab6fe4c1b45a48ec1948e0c616dab0cea799c7603"
+        },
+        {
+          "code": "EV-107",
+          "kind": "ASSET",
+          "summary": "Session device LAP-221 is the employee's own issued device",
+          "source_system": "IT asset register",
+          "source_table": "device",
+          "source_ref": "LAP-221",
+          "reliability": "B",
+          "credibility": 1,
+          "observed_at": "2026-09-21T21:47:10+05:30",
+          "ingested_at": "2026-09-21T21:47:10+05:30",
+          "entities": [
+            "EMP-0417",
+            "LAP-221"
+          ],
+          "facts": {
+            "device": "LAP-221"
+          },
+          "supports": [],
+          "rebuts": [
+            "attribution"
+          ],
+          "sha256": "793d4e2001b74806b0ed2a7996cbeab773dc73f82d8dc9c8b28fe7007b331aca"
+        }
+      ]
+    },
+    "09_missing_evidence": [
+      "Branch CCTV and biometric attendance are not ingested",
+      "Customer C-88213 not yet contacted through a verified channel",
+      "Device forensics on the session device pending"
+    ],
+    "10_control_recommendation": {
+      "id": "C1",
+      "name": "Expire temporary entitlements automatically",
+      "lead_time_s": 599702.0,
+      "legit_ops_affected": 0,
+      "why": "The override would have lapsed at its intended expiry"
+    },
+    "11_audit_history": [
+      {
+        "id": 4,
+        "at": "2026-09-27T19:39:31.874748+05:30",
+        "actor": "ananya",
+        "actor_name": "Ananya Rao",
+        "action": "council.run",
+        "payload": {
+          "outcome": "Chain supported by records; attribution to a person contested"
+        },
+        "hash": "d5c1492f607f"
+      },
+      {
+        "id": 5,
+        "at": "2026-09-27T19:39:31.885360+05:30",
+        "actor": "ananya",
+        "actor_name": "Ananya Rao",
+        "action": "copilot.ask",
+        "payload": {
+          "mode": "deterministic",
+          "dropped": 0,
+          "question": "Why was EMP-0417 accessing A-5520?"
+        },
+        "hash": "9b594efd02d1"
+      },
+      {
+        "id": 6,
+        "at": "2026-09-27T19:39:31.891152+05:30",
+        "actor": "ananya",
+        "actor_name": "Ananya Rao",
+        "action": "copilot.ask",
+        "payload": {
+          "mode": "deterministic",
+          "dropped": 0,
+          "question": "What happened before the payment?"
+        },
+        "hash": "4b12c0e08135"
+      },
+      {
+        "id": 7,
+        "at": "2026-09-27T19:39:37.291897+05:30",
+        "actor": "ananya",
+        "actor_name": "Ananya Rao",
+        "action": "case.open",
+        "payload": {
+          "alert": "AL-0921-001",
+          "priority": "P1"
+        },
+        "hash": "61337d19dd8c"
+      },
+      {
+        "id": 8,
+        "at": "2026-09-27T19:39:37.300701+05:30",
+        "actor": "ananya",
+        "actor_name": "Ananya Rao",
+        "action": "case.view",
+        "payload": {},
+        "hash": "f264802b6a64"
+      }
+    ]
+  },
+  "str_draft": {
+    "title": "Draft STR \u2014 Employee-enabled takeover of a dormant account with layering through accounts the same employee opened",
+    "sections": [
+      {
+        "title": "1. Subject accounts and parties",
+        "sentences": [
+          {
+            "text": "MOBILE_UPDATE_OVERRIDE granted to EMP-0417 on 12 Sep 11:05 via REQ-3391 (\u201cPension camp \u2014 bulk mobile updates for senior citizens\u201d); intended expiry 14 Sep 23:59; never revoked",
+            "evidence": [
+              "EV-103"
+            ],
+            "reason": null
+          },
+          {
+            "text": "EMP-0417 acct view on A-5520 (inoperative, balance \u20b93.90 L) \u2014 fields: balance, registered_mobile, nominee",
+            "evidence": [
+              "EV-110"
+            ],
+            "reason": null
+          },
+          {
+            "text": "Registered mobile changed +91 \u2022\u2022\u2022\u2022\u2022 7773 \u2192 +91 \u2022\u2022\u2022\u2022\u2022 5399 on A-5520 by EMP-0417 with an override \u2014 no OTP to the old number",
+            "evidence": [
+              "EV-112"
+            ],
+            "reason": null
+          }
+        ]
+      },
+      {
+        "title": "2. Sequence of events",
+        "sentences": [
+          {
+            "text": "11:05 \u2014 Temp override granted: MOBILE_UPDATE_OVERRIDE granted to EMP-0417 on 12 Sep 11:05 via REQ-3391 (\u201cPension camp \u2014 bulk mobile updates for senior citizens\u201d); intended expiry 14 Sep 23:59; never revoked.",
+            "evidence": [
+              "EV-103"
+            ],
+            "reason": null
+          },
+          {
+            "text": "21:47 \u2014 Off-hours login: Roster for EMP-0417: No rostered shift covers this time (last shift ended 21 Sep 18:30).",
+            "evidence": [
+              "EV-105"
+            ],
+            "reason": null
+          },
+          {
+            "text": "21:49 \u2014 Account viewed: Roster for EMP-0417: No rostered shift covers this time (last shift ended 21 Sep 18:30).",
+            "evidence": [
+              "EV-105"
+            ],
+            "reason": null
+          },
+          {
+            "text": "21:52 \u2014 Mobile no. changed: Roster for EMP-0417: No rostered shift covers this time (last shift ended 21 Sep 18:30).",
+            "evidence": [
+              "EV-105"
+            ],
+            "reason": null
+          },
+          {
+            "text": "21:55 \u2014 Limit raised: Roster for EMP-0417: No rostered shift covers this time (last shift ended 21 Sep 18:30).",
+            "evidence": [
+              "EV-105"
+            ],
+            "reason": null
+          },
+          {
+            "text": "22:12 \u2014 3 payees added: Net-banking password reset on A-5520 by C-88213 via OTP sent to the new number.",
+            "evidence": [
+              "EV-118"
+            ],
+            "reason": null
+          },
+          {
+            "text": "22:34 \u2014 \u20b914.70 L out: A-7731 opened 03 Aug 2026 by EMP-0417; KYC approved by EMP-0417 (mode BRANCH_DOCS).",
+            "evidence": [
+              "EV-101"
+            ],
+            "reason": null
+          },
+          {
+            "text": "22:58 \u2014 Forwarded: \u20b94.69 L IMPS A-7731 \u2192 A-6604 (RK Traders) at 21 Sep 22:58:10.",
+            "evidence": [
+              "EV-125"
+            ],
+            "reason": null
+          },
+          {
+            "text": "23:14 \u2014 Loop closes: \u20b94.71 L IMPS A-7768 \u2192 A-6604 (RK Traders) at 21 Sep 23:14:30.",
+            "evidence": [
+              "EV-126"
+            ],
+            "reason": null
+          },
+          {
+            "text": "23:40 \u2014 Forwarded: \u20b94.69 L IMPS A-7731 \u2192 A-6604 (RK Traders) at 21 Sep 22:58:10.",
+            "evidence": [
+              "EV-125"
+            ],
+            "reason": null
+          },
+          {
+            "text": "23:58 \u2014 Loop closes: \u20b94.71 L IMPS A-7768 \u2192 A-6604 (RK Traders) at 21 Sep 23:14:30.",
+            "evidence": [
+              "EV-126"
+            ],
+            "reason": null
+          }
+        ]
+      },
+      {
+        "title": "3. Grounds of suspicion",
+        "sentences": [
+          {
+            "text": "Transaction is High: \u20b914.70 L to 3 new payee(s) from a dormant account; 3 transfers at 98%\u201398% of the \u20b95 L per-transaction limit within 6 min.",
+            "evidence": [
+              "EV-101",
+              "EV-102",
+              "EV-122"
+            ],
+            "reason": null
+          },
+          {
+            "text": "Employee behaviour is High: first session after 20:00 in 90 days; navigation bottom 0.1% for role.",
+            "evidence": [
+              "EV-108",
+              "EV-109"
+            ],
+            "reason": null
+          },
+          {
+            "text": "Access is High: no ticket, portfolio, queue or interaction; outside any rostered shift; override used; entitlement past its intended expiry.",
+            "evidence": [
+              "EV-103",
+              "EV-111",
+              "EV-114"
+            ],
+            "reason": null
+          },
+          {
+            "text": "Network is High: 64% of the payout moved on within the chain; money looped back; recipients belong to a mule cluster.",
+            "evidence": [
+              "EV-125",
+              "EV-127",
+              "EV-126"
+            ],
+            "reason": null
+          },
+          {
+            "text": "Temporal is High: access \u2192 money in 47 min.",
+            "evidence": [
+              "EV-105",
+              "EV-106",
+              "EV-108"
+            ],
+            "reason": null
+          },
+          {
+            "text": "Relationship is High: 2 recipient(s) opened and KYC-approved by EMP-0417; C-45228 matches EMP-0417's HR address.",
+            "evidence": [
+              "EV-101",
+              "EV-102",
+              "EV-129"
+            ],
+            "reason": null
+          },
+          {
+            "text": "Against the claim: EMP-0417: 4 years' tenure; 0 prior alerts or cases.",
+            "evidence": [
+              "EV-104"
+            ],
+            "reason": null
+          }
+        ]
+      },
+      {
+        "title": "4. Explanations considered",
+        "sentences": [
+          {
+            "text": "The customer asked for the change: refuted \u2014 No ticket, IVR call, branch token or eKYC for C-88213 in the 7 days before",
+            "evidence": [
+              "EV-111",
+              "EV-114",
+              "EV-117"
+            ],
+            "reason": null
+          },
+          {
+            "text": "Authorised extended duty (camp or overtime): refuted \u2014 EMP-0417 was not on any roster at the time",
+            "evidence": [
+              "EV-105"
+            ],
+            "reason": null
+          },
+          {
+            "text": "Someone else used the employee's credentials: open \u2014 Session came from the employee's own issued device \u2014 IT forensics needed before attributing to the person",
+            "evidence": [
+              "EV-107"
+            ],
+            "reason": null
+          },
+          {
+            "text": "The customer set up these payees: refuted \u2014 Payees were added from a never-seen device after the staff-side change",
+            "evidence": [
+              "EV-118",
+              "EV-119",
+              "EV-120",
+              "EV-121"
+            ],
+            "reason": null
+          }
+        ]
+      },
+      {
+        "title": "5. Evidence attached",
+        "sentences": [
+          {
+            "text": "EV-101 \u00b7 CBS \u00b7 grade A1 \u00b7 sha256 9c6224cc448a\u2026",
+            "evidence": [
+              "EV-101"
+            ],
+            "reason": null
+          },
+          {
+            "text": "EV-102 \u00b7 CBS \u00b7 grade A1 \u00b7 sha256 4c4cc2b7914c\u2026",
+            "evidence": [
+              "EV-102"
+            ],
+            "reason": null
+          },
+          {
+            "text": "EV-103 \u00b7 IAM \u00b7 grade A1 \u00b7 sha256 92b7721b79f7\u2026",
+            "evidence": [
+              "EV-103"
+            ],
+            "reason": null
+          },
+          {
+            "text": "EV-104 \u00b7 HRMS \u00b7 grade A1 \u00b7 sha256 3b8f148438dc\u2026",
+            "evidence": [
+              "EV-104"
+            ],
+            "reason": null
+          },
+          {
+            "text": "EV-105 \u00b7 HRMS \u00b7 grade A1 \u00b7 sha256 d4006610daf2\u2026",
+            "evidence": [
+              "EV-105"
+            ],
+            "reason": null
+          },
+          {
+            "text": "EV-106 \u00b7 VPN gateway \u00b7 grade B1 \u00b7 sha256 c8b0cea6ea1c\u2026",
+            "evidence": [
+              "EV-106"
+            ],
+            "reason": null
+          },
+          {
+            "text": "EV-107 \u00b7 IT asset register \u00b7 grade B1 \u00b7 sha256 793d4e2001b7\u2026",
+            "evidence": [
+              "EV-107"
+            ],
+            "reason": null
+          },
+          {
+            "text": "EV-108 \u00b7 SUTRA models \u00b7 grade C2 \u00b7 sha256 2201ff405497\u2026",
+            "evidence": [
+              "EV-108"
+            ],
+            "reason": null
+          },
+          {
+            "text": "EV-109 \u00b7 SUTRA models \u00b7 grade C2 \u00b7 sha256 ce26e45d1658\u2026",
+            "evidence": [
+              "EV-109"
+            ],
+            "reason": null
+          },
+          {
+            "text": "EV-110 \u00b7 CBS app audit \u00b7 grade B1 \u00b7 sha256 c63eb8ceaee6\u2026",
+            "evidence": [
+              "EV-110"
+            ],
+            "reason": null
+          },
+          {
+            "text": "EV-111 \u00b7 SUTRA Alibi \u00b7 grade C2 \u00b7 sha256 cee4bdf75d9e\u2026",
+            "evidence": [
+              "EV-111"
+            ],
+            "reason": null
+          },
+          {
+            "text": "EV-112 \u00b7 CBS \u00b7 grade A1 \u00b7 sha256 a54ac8c99b71\u2026",
+            "evidence": [
+              "EV-112"
+            ],
+            "reason": null
+          }
+        ]
+      }
+    ],
+    "note": "Draft for the Principal Officer's review. Attribution to a person is not asserted.",
+    "mode": "deterministic",
+    "dropped": []
+  },
+  "provenance": {
+    "detectors": {
+      "R1": "1.0",
+      "R2": "1.0",
+      "R3": "1.0",
+      "R4": "1.0",
+      "R5": "1.0",
+      "R6": "1.0",
+      "R7": "1.0",
+      "R8": "1.0",
+      "R9": "1.0",
+      "R10": "1.0",
+      "M1": "1.0",
+      "M2": "1.0",
+      "M5": "1.0",
+      "M6": "1.0",
+      "G1": "1.0",
+      "G2": "1.0",
+      "G3": "1.0",
+      "G4": "1.0",
+      "G5": "1.0",
+      "ER": "1.0",
+      "NEEDLE": "1.0",
+      "ALIBI": "1.0"
+    },
+    "models": {
+      "chain_classifier": {
+        "features": [
+          "log_latency",
+          "override",
+          "purpose_explained",
+          "timing_explained",
+          "new_device",
+          "password_reset",
+          "n_new_payees",
+          "limit_ratio",
+          "amount_to_balance",
+          "pass_through",
+          "dormant",
+          "recipients_approved_by_employee",
+          "loop",
+          "expired_entitlement",
+          "night"
+        ],
+        "metrics": {
+          "roc_auc_oof": 0.932,
+          "pr_auc_oof": 0.921,
+          "brier_oof": 0.0115,
+          "positives": 11,
+          "negatives": 95,
+          "note": "Out-of-fold metrics on an independent synthetic world (seed 7). Not real-bank accuracy."
+        },
+        "version": "1.0",
+        "train_seed": 7,
+        "n_train": 106,
+        "trained_at": "2026-09-27T13:48:22.916750+00:00"
+      },
+      "mule_model": {
+        "features": [
+          "age_days",
+          "presenceless",
+          "self_approved",
+          "n_senders",
+          "log_inflow",
+          "pass_through_share",
+          "atm_share",
+          "device_shared",
+          "phone_shared",
+          "retention"
+        ],
+        "metrics": {
+          "roc_auc_oof": 1.0,
+          "pr_auc_oof": 1.0,
+          "precision_at_k": 1.0,
+          "k": 39,
+          "positives": 39,
+          "negatives": 4502,
+          "note": "Out-of-fold metrics on an independent synthetic world (seed 7). Not real-bank accuracy."
+        },
+        "version": "1.0",
+        "train_seed": 7,
+        "n_train": 4541,
+        "trained_at": "2026-09-27T13:48:24.443746+00:00"
+      }
+    },
+    "as_of_snapshot": "SNAP-20260921",
+    "data_note": "Synthetic Kestrel-Sim data (seed 42)."
+  },
+  "manifest": [
+    {
+      "code": "EV-101",
+      "source": "CBS:account:A-7731",
+      "grade": "A1",
+      "sha256": "9c6224cc448a4eee7bfa99a96e4fe19827d25288f5ee2c45b14cebbec4b041ab"
+    },
+    {
+      "code": "EV-102",
+      "source": "CBS:account:A-7768",
+      "grade": "A1",
+      "sha256": "4c4cc2b7914c620712f97888a32e61fc5b7d0729af6b42f0bc14873c7c87b7c8"
+    },
+    {
+      "code": "EV-103",
+      "source": "IAM:entitlement:ENT-00243",
+      "grade": "A1",
+      "sha256": "92b7721b79f79fc2eae2343c4872128282a64b14d01e76f8f1ba8e8b0ec8da5b"
+    },
+    {
+      "code": "EV-104",
+      "source": "HRMS:employee:EMP-0417",
+      "grade": "A1",
+      "sha256": "3b8f148438dca2e9ff36f77ab6fe4c1b45a48ec1948e0c616dab0cea799c7603"
+    },
+    {
+      "code": "EV-105",
+      "source": "HRMS:roster:EMP-0417:2026-09-21",
+      "grade": "A1",
+      "sha256": "d4006610daf2401af277db8929e368dfc1d7e6a32dd9108a93b26bcfcc52e46d"
+    },
+    {
+      "code": "EV-106",
+      "source": "VPN gateway:session:S-5591",
+      "grade": "B1",
+      "sha256": "c8b0cea6ea1ccbadef0a1ca1b5d5be1a984250f9447652ca9fe362f7a98804fa"
+    },
+    {
+      "code": "EV-107",
+      "source": "IT asset register:device:LAP-221",
+      "grade": "B1",
+      "sha256": "793d4e2001b74806b0ed2a7996cbeab773dc73f82d8dc9c8b28fe7007b331aca"
+    },
+    {
+      "code": "EV-108",
+      "source": "SUTRA models:m1_rhythm:S-5591",
+      "grade": "C2",
+      "sha256": "2201ff405497310f12163315c55b102e89b868d8b1da5a931f8b4c6a28bc2819"
+    },
+    {
+      "code": "EV-109",
+      "source": "SUTRA models:m2_navigation:S-5591",
+      "grade": "C2",
+      "sha256": "ce26e45d165881c2eb68ddea03e3387e976da0863b178d65d6088f9cc5a8621d"
+    },
+    {
+      "code": "EV-110",
+      "source": "CBS app audit:access_event:AE-0000418",
+      "grade": "B1",
+      "sha256": "c63eb8ceaee64a2ebf6254f07e144262c4511fbb403093cf9562de0c49b1377e"
+    },
+    {
+      "code": "EV-111",
+      "source": "SUTRA Alibi:explanation:AE-0000418",
+      "grade": "C2",
+      "sha256": "cee4bdf75d9e0b55bd309cdac95fb909769972455b3c72adbde92a04c90bf6d2"
+    },
+    {
+      "code": "EV-112",
+      "source": "CBS:state_change:SC-000001",
+      "grade": "A1",
+      "sha256": "a54ac8c99b71f89ffc8154c22cbcce60846ef4b242ef69a9f4dd2f85b0aa034c"
+    },
+    {
+      "code": "EV-113",
+      "source": "CBS app audit:access_event:AE-0000419",
+      "grade": "B1",
+      "sha256": "14d18b5211dd2c2d016c92ede02ce049868a775111fdb6fc3945eeb0aad093de"
+    },
+    {
+      "code": "EV-114",
+      "source": "SUTRA Alibi:explanation:AE-0000419",
+      "grade": "C2",
+      "sha256": "669e4a8e04168a2571783208a5d0f6299a3e837a8ffbf5c07ca309d2e82bf589"
+    },
+    {
+      "code": "EV-115",
+      "source": "CBS:state_change:SC-000002",
+      "grade": "A1",
+      "sha256": "997681bb1b504c0aa81ec69ed3a18e023f7e1b636f20b3f2f0f4fb9db4232a89"
+    },
+    {
+      "code": "EV-116",
+      "source": "CBS app audit:access_event:AE-0000420",
+      "grade": "B1",
+      "sha256": "b507f3d53f3e2f32ba295da16385e8a108186426352db4530e9558df429b05e4"
+    },
+    {
+      "code": "EV-117",
+      "source": "SUTRA Alibi:explanation:AE-0000420",
+      "grade": "C2",
+      "sha256": "58bf4ffa30a547c04f8d825150556a58a04b44771c824c84540c1a69096bc7ee"
+    },
+    {
+      "code": "EV-118",
+      "source": "Digital channel:state_change:SC-000003",
+      "grade": "A1",
+      "sha256": "01563585cd82921d734eaf5e4c0cb91f3ca58c46115633fa42d5441cd92b0f78"
+    },
+    {
+      "code": "EV-119",
+      "source": "Digital channel:beneficiary:BN-009504",
+      "grade": "A1",
+      "sha256": "32cb1fd06da62194272b6efd6528e5adc6d091076f432e5c7d38019c8e276804"
+    },
+    {
+      "code": "EV-120",
+      "source": "Digital channel:beneficiary:BN-009505",
+      "grade": "A1",
+      "sha256": "26b1d5b71975eb6edc38ac7c15037735acf5f1ab843843313eb83d0efbd02a59"
+    },
+    {
+      "code": "EV-121",
+      "source": "Digital channel:beneficiary:BN-009506",
+      "grade": "A1",
+      "sha256": "37ac2ad6459a6fc4d0c242f379f7296751f7c1d551b4ee8f4a9422daa8d79b63"
+    },
+    {
+      "code": "EV-122",
+      "source": "Payments switch:txn:TX-0000564",
+      "grade": "A1",
+      "sha256": "c4751c05f0f4d24dc316d52307424af30ae1de5728c565b80ed3a5a187c33fa3"
+    },
+    {
+      "code": "EV-123",
+      "source": "Payments switch:txn:TX-0000565",
+      "grade": "A1",
+      "sha256": "38a744d63c5cb3c36df3d28eb327728d5e85f4a455e9e8fead241c9e5abb94eb"
+    },
+    {
+      "code": "EV-124",
+      "source": "Payments switch:txn:TX-0000566",
+      "grade": "A1",
+      "sha256": "f7a39baca3e60020cc0836c188d17a2dcaa3fed082c39e17aa537b4082fc41e3"
+    },
+    {
+      "code": "EV-125",
+      "source": "Payments switch:txn:TX-0000567",
+      "grade": "A1",
+      "sha256": "997c585c7d652054a90fee20c085cab98e2d7156cb0a6f5b3f030f9a8eec4887"
+    },
+    {
+      "code": "EV-126",
+      "source": "Payments switch:txn:TX-0000569",
+      "grade": "A1",
+      "sha256": "d72ec33d7d6f74de8cfa69a9351cbc07cbecde90b6aaf8e05aa80e85c020de26"
+    },
+    {
+      "code": "EV-127",
+      "source": "Payments switch:txn:TX-0000571",
+      "grade": "A2",
+      "sha256": "dce896dc09065431d9b172d0dd41da053cdd2989b0f43ca39b49df29d0e7838c"
+    },
+    {
+      "code": "EV-128",
+      "source": "Payments switch:txn:TX-0000572",
+      "grade": "A1",
+      "sha256": "888937e30dcafe20edbfbc7243294f32805f2ccdf533f865cd54d8517dbfbef9"
+    },
+    {
+      "code": "EV-129",
+      "source": "SUTRA entity resolution:relationship:EMP-0417~C-45228",
+      "grade": "C2",
+      "sha256": "f96a3be1a842149361f90cf161187d09f6c4c35ef3adf9a87cf664a683ccb0a1"
+    },
+    {
+      "code": "EV-130",
+      "source": "SUTRA models:m6_mule:M6:A-7731",
+      "grade": "C2",
+      "sha256": "f0f1ef9863dce080cbca18ad908ed0f4448fe3ed64af7c3e82feebcbe8fa899f"
+    },
+    {
+      "code": "EV-131",
+      "source": "SUTRA models:m6_mule:M6:A-7768",
+      "grade": "C2",
+      "sha256": "bf6cf3eaaf3704ce0282989ae43e77a049c1d6b47627bc3be57ab78634585993"
+    },
+    {
+      "code": "EV-132",
+      "source": "SUTRA models:m5_classifier:M5:AE-0000419",
+      "grade": "C2",
+      "sha256": "c28bda0182bb13324b3128599bffec5b814c32c5b7285f380a2e8370f9408d1b"
+    },
+    {
+      "code": "EV-133",
+      "source": "SUTRA models:g4_factory:G4:EMP-0417",
+      "grade": "C2",
+      "sha256": "58dc8cf05b07414e1d0ea5d060e4d1bfd2d7aa5a826735ed501bee18a7b0df5e"
+    }
+  ]
+}
