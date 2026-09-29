@@ -1,0 +1,88 @@
+# Kestrel-Sim scenario catalogue.
+# Each scenario ships a suspicious variant and a legitimate twin that differs by one
+# explanatory fact. Injection logic lives in data/kestrel_sim/kestrel_sim/scenarios.py;
+# this file is the human-readable contract that tests and the Scenario Lab check against.
+
+S1:
+  title: Legitimate baseline
+  typology: NONE
+  suspicious: null
+  twin:
+    description: 90 days of ordinary banking — salaries, pensions, UPI, rent, cash, service requests.
+    differing_fact: n/a — this is the control group.
+    expected: { alert: false, note: "Any P1/P2 alert on baseline entities is a false positive." }
+
+S2:
+  title: Circular transfer
+  typology: CIRCULAR_FLOW
+  suspicious:
+    description: Four business accounts pass ₹8 L around a loop in under 48 h, keeping ~92% of the value.
+    expected: { alert: true, priority_in: [P1, P2], kind: CIRCULAR }
+  twin:
+    description: Two related firms move a working-capital loan and repayment every month.
+    differing_fact: The loop repeats monthly with invoice references between long-standing counterparties.
+    expected: { alert: false }
+
+S3:
+  title: Cash structuring
+  typology: STRUCTURING
+  suspicious:
+    description: One person, three name spellings, three branches — seven cash deposits just under ₹50,000 in 72 h, then consolidated out.
+    expected: { alert: true, priority_in: [P1, P2], kind: STRUCTURING }
+  twin:
+    description: A kirana store banks its daily takings (₹45–49.5k) at its own branch, every working day.
+    differing_fact: One account, one branch, a stable months-long pattern.
+    expected: { alert: false }
+
+S4:
+  title: Insider privilege misuse → dormant-account takeover
+  typology: INSIDER_ATO
+  suspicious:
+    description: An ops officer uses a never-revoked override after hours to change a dormant pensioner account's mobile number and raise its limit; ₹14.7 L leaves 47 minutes later into accounts the same officer opened.
+    expected: { alert: true, priority_in: [P1], kind: INSIDER_ATO }
+  twin:
+    description: A colleague updates a pensioner's mobile number at 21:40 during an evening pension camp.
+    differing_fact: A ticket, a biometric eKYC and a camp roster entry explain the access.
+    expected: { alert: false }
+
+S5:
+  title: Employee–customer relationship
+  typology: RELATIONSHIP
+  suspicious:
+    description: The consolidation account shares the insider's HR address and surname (see S4).
+    expected: { alert: true, priority_in: [P1], kind: INSIDER_ATO }
+  twin:
+    description: A relationship manager's declared brother banks at the same branch with ordinary salary flows.
+    differing_fact: The relationship is declared in the conflict register and no chain involves it.
+    expected: { alert: false }
+
+S6:
+  title: Account takeover (no insider)
+  typology: EXTERNAL_ATO
+  suspicious:
+    description: SIM-swap style takeover at 02:14 — new device in another city, password reset, two new payees, limit-hugging transfers.
+    expected: { alert: true, priority_in: [P1, P2], kind: EXTERNAL_ATO }
+  twin:
+    description: A customer buys a new phone and pays usual payees from the same city.
+    differing_fact: Same city, no password reset, no new payees, ordinary amounts.
+    expected: { alert: false }
+
+S7:
+  title: Coordinated mule network
+  typology: MULE_FACTORY
+  suspicious:
+    description: Eleven accounts opened and KYC-approved by one employee without the customer present; seven share two devices; money fans in and is cashed out.
+    expected: { alert: true, priority_in: [P1, P2], kind: MULE_FACTORY }
+  twin:
+    description: A college collects term fees from 300 students into one account.
+    differing_fact: An institution account, no shared devices, no cash-out, a seasonal pattern.
+    expected: { alert: false }
+
+S8:
+  title: False-positive stress
+  typology: NONE
+  suspicious: null
+  twin:
+    description: Salary-day fan-out from small firms, a festival spending spike, month-end overtime and legitimate limit increases for property payments.
+    differing_fact: n/a — everything here is legitimate.
+    expected: { alert: false, note: "No P1/P2 expected." }

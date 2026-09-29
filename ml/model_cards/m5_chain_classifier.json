@@ -1,0 +1,47 @@
+{
+  "model": "M5 chain classifier",
+  "algorithm": "Standardised logistic regression + Platt calibration",
+  "features": [
+    "log_latency",
+    "override",
+    "purpose_explained",
+    "timing_explained",
+    "new_device",
+    "password_reset",
+    "n_new_payees",
+    "limit_ratio",
+    "amount_to_balance",
+    "pass_through",
+    "dormant",
+    "recipients_approved_by_employee",
+    "loop",
+    "expired_entitlement",
+    "night"
+  ],
+  "coefficients": {
+    "log_latency": -1.0544719225865735,
+    "override": 0.03553380909954638,
+    "purpose_explained": 0.3084843797412041,
+    "timing_explained": -0.1669237807553146,
+    "new_device": 0.37675320404855767,
+    "password_reset": 0.37675320404855767,
+    "n_new_payees": 0.29699049287647683,
+    "limit_ratio": 0.3715431656455327,
+    "amount_to_balance": 0.3471412845169846,
+    "pass_through": 0.23107022112054956,
+    "dormant": 0.20281396621708997,
+    "recipients_approved_by_employee": 0.20281396621708997,
+    "loop": 0.20281396621708997,
+    "expired_entitlement": 0.03553380909954638,
+    "night": 0.20900647343106069
+  },
+  "metrics": {
+    "roc_auc_oof": 0.932,
+    "pr_auc_oof": 0.921,
+    "brier_oof": 0.0115,
+    "positives": 11,
+    "negatives": 95,
+    "note": "Out-of-fold metrics on an independent synthetic world (seed 7). Not real-bank accuracy."
+  },
+  "train_seed": 7
+}
