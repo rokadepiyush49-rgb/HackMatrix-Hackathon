@@ -75,18 +75,7 @@ privilege was granted **9.5 days** before the money moved.
 | 🔐 | **Governance** | Pseudonymous staff by default with two-person unmask, a hash-chained audit log, role-based capabilities, and a registry of every detector, model and rule |
 | ⏯️ | **Timeline replay** | Replays the evening of the incident at 60× over Server-Sent Events, clearly labelled as a replay |
 
-## Screenshots
 
-<table>
-  <tr>
-    <td width="50%"><br><sub><b>Case view:</b> the access → money chain in 47 minutes, and the priority rule that fired</sub></td>
-    <td width="50%"><br><sub><b>Investigation Council:</b> eight agents, a recorded ruling, consensus and dissent</sub></td>
-  </tr>
-  <tr>
-    <td width="50%"><br><sub><b>Sign-in:</b> demo personas with different roles and capabilities</sub></td>
-    <td width="50%"><br><sub><b>Dark mode:</b> the same pastel design system on a night palette</sub></td>
-  </tr>
-</table>
 
 ## How it works
 
