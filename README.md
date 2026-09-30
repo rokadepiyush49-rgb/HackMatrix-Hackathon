@@ -15,7 +15,7 @@ and argue every alert both ways: **with evidence, never a score.**
 ![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?logo=tailwindcss&logoColor=white)
 ![Data: synthetic](https://img.shields.io/badge/data-100%25_synthetic-f0a0f2)
 
-![SUTRA Command Center](docs/screenshots/command-center.png)
+![SUTRA Command Center]
 
 </div>
 
