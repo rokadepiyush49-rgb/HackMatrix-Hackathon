@@ -79,12 +79,12 @@ privilege was granted **9.5 days** before the money moved.
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/screenshots/case-desk.png" alt="Case: chain timeline and priority rule"><br><sub><b>Case view:</b> the access → money chain in 47 minutes, and the priority rule that fired</sub></td>
-    <td width="50%"><img src="docs/screenshots/council.png" alt="Investigation Council ruling"><br><sub><b>Investigation Council:</b> eight agents, a recorded ruling, consensus and dissent</sub></td>
+    <td width="50%"><br><sub><b>Case view:</b> the access → money chain in 47 minutes, and the priority rule that fired</sub></td>
+    <td width="50%"><br><sub><b>Investigation Council:</b> eight agents, a recorded ruling, consensus and dissent</sub></td>
   </tr>
   <tr>
-    <td width="50%"><img src="docs/screenshots/login.png" alt="Sign-in with demo personas"><br><sub><b>Sign-in:</b> demo personas with different roles and capabilities</sub></td>
-    <td width="50%"><img src="docs/screenshots/command-center-dark.png" alt="Command Center in dark mode"><br><sub><b>Dark mode:</b> the same pastel design system on a night palette</sub></td>
+    <td width="50%"><br><sub><b>Sign-in:</b> demo personas with different roles and capabilities</sub></td>
+    <td width="50%"><br><sub><b>Dark mode:</b> the same pastel design system on a night palette</sub></td>
   </tr>
 </table>
 
