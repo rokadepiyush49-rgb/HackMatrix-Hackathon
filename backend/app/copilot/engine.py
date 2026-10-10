@@ -11,8 +11,11 @@ The LLM never creates, scores or closes an alert (docs/adr/004).
 from __future__ import annotations
 
 import json
+import logging
+import os
 import re
 from dataclasses import asdict, dataclass, field
+from functools import lru_cache
 
 from app.core.config import get_settings
 
@@ -204,41 +207,105 @@ def _deterministic(ctx: dict, question: str) -> list[Sentence]:
 
 
 # ── Claude engine ──────────────────────────────────────────────────────────
+#
+# Two ways to reach Claude, chosen by SUTRA_LLM_PROVIDER:
+#   anthropic  first-party API: structured outputs (JSON schema) and server-side refusal fallbacks
+#   bedrock    Claude in Amazon Bedrock (Messages API, SigV4 via Pod Identity): structured outputs
+#              aren't offered there, so the schema is stated in the prompt and parsed defensively
+# Either way the result goes through the same verifier, and any failure — refusal, truncation,
+# network, malformed JSON — returns None so the deterministic engine answers instead.
+
+log = logging.getLogger("sutra.copilot")
+
+JSON_INSTRUCTION = (
+    "\n\nRespond with only a JSON object, no prose or code fences, of the form "
+    '{"sentences": [{"text": "...", "evidence": ["EV-101", "..."]}]}.'
+)
+
+
+@lru_cache(maxsize=1)
+def _client(provider: str, region: str):
+    import anthropic
+
+    if provider == "bedrock":
+        # Credentials from the standard AWS chain (EKS Pod Identity in the cluster); no API key.
+        return anthropic.AnthropicBedrockMantle(aws_region=region, max_retries=2, timeout=90.0)
+    return anthropic.Anthropic(api_key=get_settings().anthropic_api_key or None, max_retries=2, timeout=90.0)
+
+
+def _llm_available() -> bool:
+    s = get_settings()
+    if not s.llm_enabled:
+        return False
+    if s.llm_provider == "bedrock":
+        return True
+    # First-party: an API key, or workload identity federation configured for the pod.
+    return bool(s.anthropic_api_key or os.environ.get("ANTHROPIC_FEDERATION_RULE_ID"))
+
+
+def _parse(text: str) -> list[Sentence]:
+    body = text.strip()
+    if body.startswith("```"):
+        body = body.strip("`").removeprefix("json").strip()
+    start, end = body.find("{"), body.rfind("}")
+    data = json.loads(body[start:end + 1] if start >= 0 else body)
+    return [Sentence(str(x["text"]), [str(c) for c in x.get("evidence", [])]) for x in data.get("sentences", [])]
 
 
 def _claude(ctx: dict, question: str) -> tuple[list[Sentence], str] | None:
-    s = get_settings()
-    if not s.llm_enabled or not s.anthropic_api_key:
+    if not _llm_available():
         return None
-    try:
-        import anthropic
+    import anthropic
 
-        client = anthropic.Anthropic(api_key=s.anthropic_api_key, max_retries=2, timeout=90.0)
-        payload = {
-            "claim": ctx["argument"]["claim"],
-            "chain": [{k: lk[k] for k in ("code", "t", "title", "detail", "evidence_codes")} for lk in ctx["links"]],
-            "dimensions": [{k: d[k] for k in ("label", "level", "summary", "supporting", "contradicting")} for d in ctx["dims"]],
-            "defence": ctx["argument"]["rebuttals"],
-            "missing_evidence": ctx["argument"]["missing"],
-            "evidence": [{k: e[k] for k in ("code", "summary", "source_system", "reliability", "credibility")}
-                         for e in ctx["evidence"]],
-        }
-        resp = client.beta.messages.create(
-            model=s.llm_model,
-            max_tokens=16000,
-            betas=["server-side-fallback-2026-07-01"],
-            fallbacks="default",
-            output_config={"effort": "medium", "format": {"type": "json_schema", "schema": SCHEMA}},
-            system=SYSTEM,
-            messages=[{"role": "user", "content": f"CASE EVIDENCE (JSON):\n{json.dumps(payload, default=str)}\n\n"
-                                                  f"QUESTION: {question}"}],
-        )
-        if resp.stop_reason == "refusal":
-            return None
-        text = next((b.text for b in resp.content if b.type == "text"), "")
-        data = json.loads(text)
-        return [Sentence(x["text"], list(x["evidence"])) for x in data.get("sentences", [])], resp.model
-    except Exception:  # network, auth, rate limit, malformed output → deterministic engine
+    s = get_settings()
+    payload = {
+        "claim": ctx["argument"]["claim"],
+        "chain": [{k: lk[k] for k in ("code", "t", "title", "detail", "evidence_codes")} for lk in ctx["links"]],
+        "dimensions": [{k: d[k] for k in ("label", "level", "summary", "supporting", "contradicting")} for d in ctx["dims"]],
+        "defence": ctx["argument"]["rebuttals"],
+        "missing_evidence": ctx["argument"]["missing"],
+        "evidence": [{k: e[k] for k in ("code", "summary", "source_system", "reliability", "credibility")}
+                     for e in ctx["evidence"]],
+    }
+    # The case evidence is identical for every question on a case: cache it (explicit breakpoint,
+    # which both the first-party API and Bedrock honour) and keep the varying question after it.
+    content = [
+        {"type": "text", "text": f"CASE EVIDENCE (JSON):\n{json.dumps(payload, default=str, sort_keys=True)}",
+         "cache_control": {"type": "ephemeral"}},
+        {"type": "text", "text": f"QUESTION: {question}"},
+    ]
+    try:
+        client = _client(s.llm_provider, s.aws_region)
+        if s.llm_provider == "bedrock":
+            resp = client.messages.create(
+                model=s.llm_bedrock_model, max_tokens=16000, output_config={"effort": s.llm_effort},
+                system=SYSTEM + JSON_INSTRUCTION, messages=[{"role": "user", "content": content}],
+            )
+        else:
+            resp = client.beta.messages.create(
+                model=s.llm_model, max_tokens=16000,
+                betas=["server-side-fallback-2026-07-01"], fallbacks="default",
+                output_config={"effort": s.llm_effort, "format": {"type": "json_schema", "schema": SCHEMA}},
+                system=SYSTEM, messages=[{"role": "user", "content": content}],
+            )
+    except anthropic.APIStatusError as e:
+        log.warning("llm.error status=%s request_id=%s type=%s", e.status_code, e.request_id, type(e).__name__)
+        return None
+    except anthropic.APIConnectionError as e:
+        log.warning("llm.unreachable type=%s", type(e).__name__)
+        return None
+
+    u = resp.usage
+    log.info("llm.usage model=%s stop=%s in=%s out=%s cache_read=%s cache_write=%s",
+             resp.model, resp.stop_reason, u.input_tokens, u.output_tokens,
+             getattr(u, "cache_read_input_tokens", 0), getattr(u, "cache_creation_input_tokens", 0))
+    if resp.stop_reason in ("refusal", "max_tokens"):
+        return None
+    text = next((b.text for b in resp.content if b.type == "text"), "")
+    try:
+        return _parse(text), resp.model
+    except (ValueError, KeyError, TypeError) as e:
+        log.warning("llm.unparseable type=%s", type(e).__name__)
         return None
 
 
