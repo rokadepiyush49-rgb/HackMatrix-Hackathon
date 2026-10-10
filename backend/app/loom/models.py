@@ -470,3 +470,27 @@ class ScenarioLabel(Base):
     entities: Mapped[list] = mapped_column(ARRAY(String), default=list)
     events: Mapped[list] = mapped_column(ARRAY(String), default=list)
     extra: Mapped[dict] = mapped_column(JSONB, default=dict)
+
+
+# ── Demo: the live feed ───────────────────────────────────────────────────────
+
+
+class FeedEvent(Base):
+    """A source-system row held back from the initial load and ingested during the live demo.
+
+    `row` is the row exactly as it will be inserted (already tokenised). `effect` is the master-data
+    change it implies (an account's mobile token or limit), kept so ingestion can be undone.
+    `strand` is the simulator's ground truth; the API reveals it only after a run has finished.
+    """
+
+    __tablename__ = "feed_event"
+    seq: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=False)
+    t: Mapped[datetime] = mapped_column(TS)
+    source_table: Mapped[str] = mapped_column(String(24))
+    ref: Mapped[str] = mapped_column(String(24), index=True)
+    system: Mapped[str] = mapped_column(String(40))
+    summary: Mapped[str] = mapped_column(Text)
+    row: Mapped[dict] = mapped_column(JSONB)
+    effect: Mapped[dict | None] = mapped_column(JSONB)
+    strand: Mapped[str] = mapped_column(String(12))
+    ingested_at: Mapped[datetime | None] = mapped_column(TS)

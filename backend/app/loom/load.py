@@ -55,6 +55,21 @@ def _clean(table: str, row: dict) -> dict:
     return out
 
 
+def _jsonable(row: dict) -> dict:
+    return {k: v.isoformat() if isinstance(v, datetime) else v for k, v in row.items()}
+
+
+def _feed_effect(effect: dict | None) -> dict | None:
+    """The master-data change a feed row implies, in database terms (tokens, never raw numbers)."""
+    if not effect:
+        return None
+    if effect["field"] == "REGISTERED_MOBILE":
+        return {"account_id": effect["account_id"], "column": "registered_mobile_tok",
+                "old": tokenise(effect["old"], "phone"), "new": tokenise(effect["new"], "phone")}
+    return {"account_id": effect["account_id"], "column": "daily_limit_paise",
+            "old": int(effect["old"]), "new": int(effect["new"])}
+
+
 def _adapt(v):
     if isinstance(v, dict):
         return Jsonb(v)
@@ -88,6 +103,17 @@ def load_world(world, log=print) -> dict[str, int]:
                     cp.write_row([_adapt(r[c]) for c in cols])
             counts[table] = len(rows)
             log(f"  {table:<14} {len(rows):>8,}  ({time.perf_counter() - t0:.1f}s)")
+        feed = getattr(world, "live_feed", None) or []
+        if feed:
+            cols = ["seq", "t", "source_table", "ref", "system", "summary", "row", "effect", "strand"]
+            with cur.copy(f"COPY feed_event ({', '.join(cols)}) FROM STDIN") as cp:
+                for e in feed:
+                    effect = _feed_effect(e["effect"])
+                    cp.write_row([e["seq"], e["t"], e["table"], e["row"]["id"], e["system"], e["summary"],
+                                  Jsonb(_jsonable(_clean(e["table"], e["row"]))), Jsonb(effect) if effect else None,
+                                  e["strand"]])
+            counts["feed_event"] = len(feed)
+            log(f"  {'live feed':<14} {len(feed):>8,}  (held back for the live demo)")
         raw.commit()
     finally:
         raw.close()

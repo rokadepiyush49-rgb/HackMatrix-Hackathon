@@ -11,3 +11,6 @@ disk (`SUTRA_STORAGE_BACKEND=local`), behind a storage interface that has an S3 
 
 **Consequences.** Fewer moving parts to run on a laptop with no Docker. Moving to ARQ is a
 drop-in change at the `app/workers` boundary; nothing in the domain modules changes.
+
+**Update.** The end-to-end demo no longer relies on replay alone: Live Ops ingests a held-back
+evening and runs the real pipeline on it ([ADR 016](016-live-feed-demo.md)).
