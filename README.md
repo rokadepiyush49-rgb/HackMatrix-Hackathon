@@ -22,8 +22,6 @@ and argue every alert both ways: **with evidence, never a score.**
 ![Terraform](https://img.shields.io/badge/IaC-Terraform-7B42BC?logo=terraform&logoColor=white)
 ![License](https://img.shields.io/badge/license-Apache--2.0-blue)
 
-![SUTRA Command Center](docs/screenshots/command-center.png)
-
 </div>
 
 > [!NOTE]
@@ -36,7 +34,6 @@ and argue every alert both ways: **with evidence, never a score.**
 
 - [The problem](#the-problem)
 - [What SUTRA does](#what-sutra-does)
-- [Screenshots](#screenshots)
 - [How it works](#how-it-works)
 - [Detectors](#detectors)
 - [Priority without a score](#priority-without-a-score)
@@ -84,18 +81,7 @@ privilege was granted **9.5 days** before the money moved.
 | 🔐 | **Governance** | Pseudonymous staff by default with two-person unmask, a hash-chained audit log, role-based capabilities, and a registry of every detector, model and rule |
 | ⏯️ | **Timeline replay** | Replays the evening of the incident at 60× over Server-Sent Events, clearly labelled as a replay |
 
-## Screenshots
 
-<table>
-  <tr>
-    <td width="50%"><img src="docs/screenshots/case-desk.png" alt="Case: chain timeline and priority rule"><br><sub><b>Case view:</b> the access → money chain in 47 minutes, and the priority rule that fired</sub></td>
-    <td width="50%"><img src="docs/screenshots/council.png" alt="Investigation Council ruling"><br><sub><b>Investigation Council:</b> eight agents, a recorded ruling, consensus and dissent</sub></td>
-  </tr>
-  <tr>
-    <td width="50%"><img src="docs/screenshots/login.png" alt="Sign-in with demo personas"><br><sub><b>Sign-in:</b> demo personas with different roles and capabilities</sub></td>
-    <td width="50%"><img src="docs/screenshots/command-center-dark.png" alt="Command Center in dark mode"><br><sub><b>Dark mode:</b> the same pastel design system on a night palette</sub></td>
-  </tr>
-</table>
 
 ## How it works
 
