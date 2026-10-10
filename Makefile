@@ -23,7 +23,7 @@ migrate: db      ## Apply database migrations
 seed: migrate    ## Generate Kestrel-Sim data and load it
 	$(PY) python -m app.cli seed
 
-train:           ## Train ML models on an independent synthetic world (seed 7)
+train:           ## Train M5, M6, M7 on worlds 7–10; evaluate against rule baselines (ml/reports)
 	$(PY) python -m app.cli train
 
 detect:          ## Run the full pipeline: signals → chains → alibi → briefs

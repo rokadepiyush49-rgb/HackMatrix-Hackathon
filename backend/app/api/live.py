@@ -54,7 +54,7 @@ STAGES = [
     {"key": "baselines", "label": "Baselines", "what": "Access rhythm (M1) and navigation (M2) per role"},
     {"key": "signals", "label": "Signals", "what": "Rules, models and graph detectors"},
     {"key": "needle", "label": "Needle", "what": "Assemble privilege-to-payment chains"},
-    {"key": "brief", "label": "Brief", "what": "Grade evidence, score with M5/M6, set priority"},
+    {"key": "brief", "label": "Brief", "what": "Grade evidence, score with M5/M6, set priority, rank connected cases with M7"},
     {"key": "persist", "label": "Persist", "what": "One transaction; alert IDs, triage and cases kept"},
     {"key": "lab", "label": "Scenario checks", "what": "Grade every scenario against ground truth"},
 ]

@@ -86,3 +86,12 @@ S8:
     description: Salary-day fan-out from small firms, a festival spending spike, month-end overtime and legitimate limit increases for property payments.
     differing_fact: n/a — everything here is legitimate.
     expected: { alert: false, note: "No P1/P2 expected." }
+
+S9:
+  title: Legitimate mule look-alikes
+  typology: NONE
+  suspicious: null
+  twin:
+    description: Video-KYC openings with no branch visit, single-officer branches where the opener approves the KYC under a logged exception, and households that share one phone or device.
+    differing_fact: Each shares one surface trait with a mule account, but money is not passed through or cashed out and no single officer opens a burst of linked accounts.
+    expected: { alert: false, note: "Training and held-out worlds only (not the demo world). Used to measure look-alike false positives." }

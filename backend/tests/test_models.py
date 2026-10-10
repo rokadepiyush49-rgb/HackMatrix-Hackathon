@@ -12,16 +12,17 @@ from app.ml.models import _load, model_meta, score_chain
 @pytest.fixture(scope="module")
 def meta():
     m = model_meta()
-    if set(m) != {"chain_classifier", "mule_model"}:
+    if not {"chain_classifier", "mule_model"} <= set(m):
         pytest.skip("model artifacts not built — run `make train`")
-    return m
+    return {k: m[k] for k in ("chain_classifier", "mule_model")}
 
 
 def test_models_are_traceable(meta):
     for name, m in meta.items():
         assert len(m["artifact_sha256"]) == 64, name
         assert {"scikit-learn", "lightgbm", "numpy"} <= set(m["libraries"]), name
-        assert m["train_seed"] != 42, "trained on the demo world — evaluation would be leaked"
+        assert not {11, 42} & set(m["train_seeds"]), "trained on a held-out world — evaluation would be leaked"
+        assert "GroupKFold" in m["cv"], "cross-validation must be grouped by ring"
 
 
 def test_metric_floors(meta):

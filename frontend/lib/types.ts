@@ -395,9 +395,64 @@ export interface ModelMeta {
   features: string[];
   metrics: Record<string, number | string>;
   version: string;
-  train_seed: number;
+  train_seeds?: number[];
   n_train: number;
   trained_at: string;
+  threshold?: number;
+  cv?: string;
+}
+
+// ── FIN-04 evaluation: M7 against the rule baselines (GET /lab/model-eval) ──
+
+export type EvalMethod = "RB-1" | "RB-2" | "M7" | "M7-structure";
+export interface Interval { value: number | null; lo: number | null; hi: number | null }
+export interface EvalRow {
+  method: EvalMethod;
+  label: string;
+  alerts: number;
+  tp: number;
+  fp: number;
+  fn: number;
+  lookalike_alerts: number;
+  alerts_per_1k_accounts: number;
+  precision: Interval;
+  recall: Interval;
+  f1: Interval;
+  pr_auc: Interval;
+  lookalike_fp_rate: Interval;
+  threshold?: number;
+  at_rb1_budget?: { k: number; tp: number; precision: number | null; recall: number };
+}
+export interface EvalSet {
+  key: "cv" | "heldout" | "later";
+  title: string;
+  worlds: string[];
+  cases: number;
+  positives: number;
+  lookalikes: number;
+  background: number;
+  accounts: number;
+  rows: EvalRow[];
+  by_typology: { typology: string; cases: number; recall: Record<EvalMethod, number> }[];
+  lookalikes_by_type: { type: string; cases: number; alerted: Record<EvalMethod, number> }[];
+  note?: string;
+}
+export interface EvalFeature { feature: string; label: string; family: "graph" | "sequence" | "evidence"; share: number }
+export interface ModelEval {
+  generated_at: string;
+  note: string;
+  train_worlds: string[];
+  heldout_worlds: string[];
+  later_cutoff: string;
+  baselines: {
+    "RB-1": { version: string; rule: string; clauses: { code: string; typology: string; text: string }[] };
+    "RB-2": { version: string; rule: string };
+  };
+  methods: Record<EvalMethod, string>;
+  models: Record<string, { label: string; threshold: number; metrics: Record<string, number | string>; families: Record<string, number>; importance: EvalFeature[] }>;
+  test_sets: EvalSet[];
+  live_feed: { case_key: string; label_kind: string; typology: string; instances: string[]; rb1: string[]; rb2: string | null; m7_score: number; m7_alert: boolean; top_features: { label: string; contribution: number; refs: string[] }[] }[];
+  live_feed_note: string;
 }
 
 export interface LabReport {

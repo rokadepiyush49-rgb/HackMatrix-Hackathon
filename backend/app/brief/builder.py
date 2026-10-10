@@ -19,7 +19,6 @@ from app.brief.evidence import (
     ev_er,
     ev_model,
 )
-from app.ml.models import score_chain
 from app.needle.chains import ChainDraft
 from app.needle.detectors.rules import rupees
 from app.needle.registry import DETECTORS
@@ -176,10 +175,10 @@ def _insider(ctx: BriefContext, d: ChainDraft) -> BriefResult:
                                                [emp, dev], {"device": dev}, supports=[], rebuts=["attribution"]))
 
     # classifier
-    sc = score_chain(feats)
+    sc = ctx.score_chain(feats)
     if sc is not None:
         top = ", ".join(f"{c['label'].lower()} ({c['contribution']:+.2f})" for c in sc.contributions[:3])
-        book.add(ev_model("M5_CLASSIFIER", f"Chain classifier {sc.p:.2f} (calibrated on synthetic seed 7). "
+        book.add(ev_model("M5_CLASSIFIER", f"Chain classifier {sc.p:.2f} (calibrated on synthetic training worlds). "
                           f"Largest contributions: {top}", f"M5:{d.root_ref}", d.last_t, [emp, acct],
                           {"p": sc.p, "decision": sc.decision, "contributions": sc.contributions}), "E5")
     items = book.finalise()
@@ -310,10 +309,10 @@ def _insider(ctx: BriefContext, d: ChainDraft) -> BriefResult:
 def _external(ctx: BriefContext, d: ChainDraft) -> BriefResult:
     ix = ctx.ix
     book = build_chain_evidence(ctx, d)
-    sc = score_chain(d.features)
+    sc = ctx.score_chain(d.features)
     if sc is not None:
         top = ", ".join(f"{c['label'].lower()} ({c['contribution']:+.2f})" for c in sc.contributions[:3])
-        book.add(ev_model("M5_CLASSIFIER", f"Chain classifier {sc.p:.2f} (calibrated on synthetic seed 7). "
+        book.add(ev_model("M5_CLASSIFIER", f"Chain classifier {sc.p:.2f} (calibrated on synthetic training worlds). "
                           f"Largest contributions: {top}", f"M5:{d.root_ref}", d.last_t, [d.account_id],
                           {"p": sc.p, "contributions": sc.contributions}), "E5")
     items = book.finalise()
@@ -505,7 +504,7 @@ def _finish(d, typology, claim, summary, prio, rule, dims, rebuttals, items, rec
         "backing": _backing(typology),
         "qualifier": {"systems": systems, "n_systems": len(systems),
                       "model": ({"name": "M5 chain classifier", "p": sc.p, "decision": sc.decision,
-                                 "calibrated_on": "synthetic world, seed 7"} if sc else None),
+                                 "calibrated_on": "synthetic training worlds 7–10"} if sc else None),
                       "text": f"Corroborated across {len(systems)} independent systems"
                       + (f" · chain classifier {sc.p:.2f} (calibrated on synthetic data)" if sc else "")},
         "missing": missing,

@@ -22,6 +22,7 @@ class BriefContext:
     session_nav: pd.DataFrame  # M2 per staff session
     mule_scores: pd.DataFrame  # M6 per account
     prior_alerts: dict[str, int] = field(default_factory=dict)
+    chain_model: bool = True  # False: the lattice runs on rules alone (rule baseline RB-2, docs/ml/rule_baseline.md)
 
     def __post_init__(self) -> None:
         self.rhythm_by_session = self.session_rhythm.set_index("id") if len(self.session_rhythm) else self.session_rhythm
@@ -33,6 +34,11 @@ class BriefContext:
                 self.sig_by_entity.setdefault(e, []).append(s)
             for ev in s["event_refs"]:
                 self.sig_by_event.setdefault(ev, []).append(s)
+
+    def score_chain(self, features: dict):
+        from app.ml.models import score_chain
+
+        return score_chain(features) if self.chain_model else None
 
     def signals_for(self, events: set[str], entities: set[str], detectors: set[str] | None = None) -> list[dict]:
         seen, out = set(), []

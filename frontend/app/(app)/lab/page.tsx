@@ -5,6 +5,7 @@ import { ArrowRight, Check, Cpu, Eraser, FlaskConical, Loader2, RotateCcw, Scale
 
 import { AlibiResolution } from "@/components/brief/brief";
 import { Funnel } from "@/components/brief/funnel";
+import { ModelEvalPanel } from "@/components/lab/model-eval";
 import { Button, Chip, CountUp, ErrorBox, LevelBar, PageHeader, Panel, PanelHead, PriorityPill, Skeleton, Tip } from "@/components/ui/primitives";
 import { useGet, usePost } from "@/lib/api";
 import { cn, pct, stamp } from "@/lib/format";
@@ -179,6 +180,11 @@ function FlipPanel() {
 const METRIC_LABEL: Record<string, string> = {
   roc_auc_oof: "ROC-AUC (OOF)", pr_auc_oof: "PR-AUC (OOF)", brier_oof: "Brier (OOF)", precision_at_k: "Precision@k",
 };
+const MODEL_NAME: Record<string, string> = {
+  chain_classifier: "M5 · Chain classifier (logistic + Platt)",
+  mule_model: "M6 · Mule-likeness (LightGBM + TreeSHAP)",
+  case_prioritiser: "M7 · Connected-case prioritiser (LightGBM + TreeSHAP)",
+};
 
 export default function TwinLab() {
   const { data: rep, error } = useGet<LabReport>(["lab"], "/lab/report");
@@ -221,6 +227,8 @@ export default function TwinLab() {
           <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
             {[...pairs.entries()].map(([id, list], i) => <PairCard key={id} id={id} list={list} i={i} />)}
           </div>
+
+          <div className="mt-4"><ModelEvalPanel /></div>
 
           <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
             <FlipPanel />
@@ -269,14 +277,14 @@ export default function TwinLab() {
             </Panel>
 
             <Panel>
-              <PanelHead eyebrow="Model cards" title="Glass-box models, trained on an independent world" />
+              <PanelHead eyebrow="Model cards" title="Glass-box models, trained on independent worlds" />
               <div className="space-y-3 px-4 pb-4">
                 {Object.entries(rep.models).map(([name, m]) => (
                   <div key={name} className="rounded-lg border border-line p-3">
                     <div className="flex items-center gap-2">
                       <Cpu size={14} className="text-ai" />
-                      <span className="text-[13px] font-semibold text-ink">{name === "chain_classifier" ? "M5 · Chain classifier (logistic + Platt)" : "M6 · Mule-likeness (LightGBM + TreeSHAP)"}</span>
-                      <span className="num ml-auto text-[10.5px] text-faint">v{m.version} · seed {m.train_seed} · n={m.n_train.toLocaleString("en-IN")}</span>
+                      <span className="text-[13px] font-semibold text-ink">{MODEL_NAME[name] ?? name}</span>
+                      <span className="num ml-auto text-[10.5px] text-faint">v{m.version} · worlds {m.train_seeds?.join(", ") ?? "—"} · n={m.n_train.toLocaleString("en-IN")}</span>
                     </div>
                     <div className="mt-2.5 grid grid-cols-3 gap-2">
                       {Object.entries(m.metrics).filter(([k]) => METRIC_LABEL[k]).map(([k, v]) => (
@@ -287,7 +295,7 @@ export default function TwinLab() {
                       ))}
                     </div>
                     <div className="mt-2 flex flex-wrap gap-1">{m.features.map((f) => <Chip key={f} tone="faint" className="!normal-case">{f}</Chip>)}</div>
-                    <p className="mt-2 text-[11px] text-faint">{String(m.metrics.note ?? "")}</p>
+                    <p className="mt-2 text-[11px] text-faint">{String(m.metrics.note ?? "")}{m.cv ? ` ${m.cv}` : ""}</p>
                   </div>
                 ))}
                 <p className="text-[11px] text-faint">{rep.note} Positive rate in training: {pct(Number(rep.models.chain_classifier?.metrics.positives ?? 0) / Math.max(1, rep.models.chain_classifier?.n_train ?? 1))}.</p>

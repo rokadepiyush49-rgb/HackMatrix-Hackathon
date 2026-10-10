@@ -151,8 +151,8 @@ behaviour, Access, Network, Temporal, Relationship, Historical**) each get a lev
 
 **Kestrel-Sim** ([`data/kestrel_sim`](data/kestrel_sim)) is a seeded, agent-based co-operative
 bank: branches, staff, rosters, entitlements, customers, devices, sessions, service tickets
-and 90 days of transactions. The demo world uses seed 42; models train on an independent
-world (seed 7). Sizes: `tiny` (900 customers), `demo` (3,600), `full` (12,000).
+and 90 days of transactions. The demo world uses seed 42; models train on four independent
+worlds (seeds 7–10), and seed 11 is held out for evaluation. Sizes: `tiny` (900 customers), `demo` (3,600), `full` (12,000).
 
 Each scenario ships a suspicious variant **and** a legitimate twin
 ([`data/scenarios/scenarios.yaml`](data/scenarios/scenarios.yaml)):
@@ -173,17 +173,42 @@ In the demo run, **14/14 scenario checks pass and 8/8 legitimate twins stay quie
 
 ## Models
 
-Both models are glass-box and train on the independent seed-7 world
-([ADR 007](docs/adr/007-models-and-leakage.md)); model cards live in
-[`ml/model_cards`](ml/model_cards).
+All three models are glass-box and train on four independent worlds (seeds 7–10), with every
+cross-validation split grouped by ring so that no ring is learned on one side of a split and scored on
+the other ([ADR 007](docs/adr/007-models-and-leakage.md), [ADR 017](docs/adr/017-learned-prioritisation.md)).
+Model cards are written to `ml/model_cards`. M7's card and the FIN-04 evaluation are written to
+[`ml/reports`](ml/reports).
 
-| Model | Algorithm | Explanations | Out-of-fold metrics (synthetic) |
+| Model | Algorithm | Explanations | Grouped out-of-fold metrics (synthetic) |
 |---|---|---|---|
-| **M5** chain classifier | Standardised logistic regression + Platt calibration | Exact per-feature contributions (coef × standardised value) | ROC-AUC 1.00 (17 positive / 105 negative chains) — synthetic chains separate easily, so M5 may only move a chain between watch-list and queue |
-| **M6** mule-likeness | LightGBM (200 trees, 15 leaves) | Native TreeSHAP per prediction | ROC-AUC 0.987 · PR-AUC 0.964 · precision@k 0.90 (81 positive / 4,673 negative accounts, incl. Video-KYC, single-officer and shared-device look-alikes) |
+| **M5** chain classifier | Standardised logistic regression + Platt calibration | Exact per-feature contributions (coef × standardised value) | ROC-AUC 0.97 · PR-AUC 0.955 (71 positive / 371 negative chains). M5 may only move a chain between watch-list and queue |
+| **M6** mule-likeness | LightGBM (200 trees, 15 leaves) | Native TreeSHAP per prediction | ROC-AUC 0.999 · PR-AUC 0.979 · precision@k 0.92 (326 positive / 18,656 negative accounts, incl. Video-KYC, single-officer and shared-device look-alikes) |
+| **M7** connected-case prioritiser | LightGBM over 32 graph, sequence and detector-evidence features; Platt calibration | TreeSHAP per case, each feature linked to the records behind it | PR-AUC 1.00 (113 positive cases, 545 look-alikes). Orders alerts inside a priority band; never sets one |
 
-A CI quality gate (`backend/tests/test_models.py`) fails the build if metrics drop, if explanations stop
-adding up exactly, or if M6 starts leaning on a single feature (> 80% of its TreeSHAP weight).
+### Learned prioritisation vs. the rule baseline (FIN-04)
+
+Cases are connected components of chains and signals that share accounts, customers or devices
+([labeling](docs/ml/labeling.md)). M7 ranks them from [32 features](docs/ml/features.md). It is compared
+with **RB-1**, a frozen six-clause rule set, and **RB-2**, SUTRA's own lattice with every model switched
+off ([rule baseline](docs/ml/rule_baseline.md)). Synthetic results, with 95% intervals over groups in
+`ml/reports/fin04_eval.json`:
+
+| Test set | Method | Precision | Recall | Look-alikes alerted |
+|---|---|---|---|---|
+| Held-out worlds 11 and 42 (707 cases, 33 suspicious, 166 look-alikes) | RB-1 | 0.42 | 0.91 | 16% |
+| | RB-2 | 0.24 | 0.76 | 4% |
+| | **M7** | **1.00** | **0.97** | **0%** |
+| | M7 without detector features | 0.91 | 0.88 | 1% |
+| Later events, models fitted only on cases before 2 Sep (126 cases, 21 suspicious) | RB-1 | 0.66 | 1.00 | 19% |
+| | **M7** | **0.84** | **1.00** | **9%** |
+
+Rules still win in places, and the report says so. They catch every circular flow (M7 misses the demo
+world's 8 Sep loop, which stays P2), and RB-2 ranks later events better (PR-AUC 0.92 against 0.84).
+
+CI quality gates (`backend/tests/test_models.py`, `backend/tests/test_m7.py`) fail the build if metrics
+drop, if explanations stop adding up exactly, if a model starts leaning on one feature (M6 > 80%, M7 > 60%
+of TreeSHAP weight), if a group straddles a fold, or if the evaluation report loses a method, a test set
+or its look-alikes.
 
 > [!IMPORTANT]
 > These metrics come from synthetic data. They say nothing about accuracy on real bank data.
@@ -334,7 +359,7 @@ investigator) first, then **Suresh Iyer** (vigilance) to experience the four-eye
 | `make setup` | Install Python and Node dependencies |
 | `make demo` | `seed` + `train` + `detect`: everything the demo needs, from scratch |
 | `make seed` | Generate the Kestrel-Sim world and load it into Postgres |
-| `make train` | Train M5 and M6 on the independent seed-7 world |
+| `make train` | Train M5, M6 and M7 on worlds 7–10, then evaluate M7 against the rule baselines (`ml/reports/`) |
 | `make detect` | Run the pipeline: signals → chains → alibi → briefs |
 | `make live-play` / `make live-reset` | Stream the held-back evening and detect / undo it and re-detect (what Live Ops does) |
 | `make api` / `make web` | Start the API on :8000 / the web app on :3000 |

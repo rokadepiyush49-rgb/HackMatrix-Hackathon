@@ -21,5 +21,6 @@ differs from the long-term architecture. Format: context → decision → conseq
 | [014](014-identity-and-secrets.md) | No long-lived credentials anywhere | Accepted |
 | [015](015-llm-residency.md) | LLM narration off in production until inference can stay in India | Accepted |
 | [016](016-live-feed-demo.md) | A live feed for the end-to-end demo; detection re-runs keep IDs and cases | Accepted |
+| [017](017-learned-prioritisation.md) | Connected cases, a learned prioritiser (M7) and a documented rule baseline | Accepted |
 
 For every library and service — *why this, not that* — see [`docs/TECH_DECISIONS.md`](../TECH_DECISIONS.md).

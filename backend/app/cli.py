@@ -29,7 +29,7 @@ def cmd_seed(args) -> None:
 def cmd_train(args) -> None:
     from app.ml.train import train_all
 
-    train_all(seed=args.seed or 7, size=args.size or "demo")
+    train_all(size=args.size or "demo", evaluate=not getattr(args, "no_eval", False))
 
 
 def cmd_detect(args) -> None:
@@ -42,7 +42,7 @@ def cmd_demo(args) -> None:
     cmd_seed(args)
 
     if not (get_settings().artifacts_path / "chain_classifier.joblib").exists() or args.retrain:
-        cmd_train(argparse.Namespace(seed=7, size=args.size))
+        cmd_train(argparse.Namespace(size=args.size, no_eval=False))
     cmd_detect(args)
 
 
@@ -135,7 +135,7 @@ def main(argv: list[str] | None = None) -> None:
     sub = p.add_subparsers(dest="cmd", required=True)
     for name, fn, helptext in [
         ("seed", cmd_seed, "Generate the synthetic world and load it"),
-        ("train", cmd_train, "Train models on an independent synthetic world"),
+        ("train", cmd_train, "Train M5, M6 and M7 on worlds 7–10, then evaluate against the rule baselines"),
         ("detect", cmd_detect, "Run signals → chains → alibi → briefs"),
         ("demo", cmd_demo, "seed + train (if needed) + detect"),
     ]:
@@ -143,6 +143,7 @@ def main(argv: list[str] | None = None) -> None:
         sp.add_argument("--seed", type=int)
         sp.add_argument("--size", choices=["tiny", "demo", "full"])
         sp.add_argument("--retrain", action="store_true")
+        sp.add_argument("--no-eval", action="store_true", help="train: skip the held-out evaluation")
         sp.set_defaults(fn=fn)
     lp = sub.add_parser("live-play", help="Stream tonight's held-back feed into Loom and detect (demo world)")
     lp.add_argument("--speed", type=float, default=0.0, help="simulated seconds per second; 0 = no pauses")

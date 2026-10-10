@@ -82,7 +82,14 @@ def alert_summary(a: Alert, c: Chain) -> dict:
         "dims": [{"key": d["key"], "label": d["label"], "level": d["level"]} for d in (a.dims or [])],
         "lanes": sorted({lk.lane for lk in []}),
         "entity_refs": c.entity_refs or [],
+        "case_key": (arg.get("case") or {}).get("key"),
+        "suspicion": ((arg.get("case") or {}).get("suspicion") or {}).get("p"),
     }
+
+
+def queue_order(x: dict) -> tuple:
+    """Priority band first (set by the lattice), then M7's suspicion score, then money at risk."""
+    return (PRIORITY_ORDER.get(x["priority"], 9), -(x.get("suspicion") or 0.0), -x["amount_at_risk"])
 
 
 def load_alert(db: Session, alert_id: str) -> tuple[Alert, Chain]:

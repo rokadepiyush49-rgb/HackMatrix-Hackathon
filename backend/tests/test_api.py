@@ -160,7 +160,25 @@ def test_audit_chain_verifies_after_writes(client, as_user, insider):
 def test_lab_report_matches_scenarios(client, as_user):
     rep = client.get(f"{API}/lab/report", headers=as_user("ananya")).json()
     assert rep["summary"]["passed"] == rep["summary"]["total"]
-    assert rep["models"]["chain_classifier"]["train_seed"] != 42, "models are trained on an independent world"
+    for name in ("chain_classifier", "mule_model", "case_prioritiser"):
+        assert 42 not in rep["models"][name]["train_seeds"], "models are trained on independent worlds"
+
+
+def test_model_eval_compares_m7_with_the_rule_baselines(client, as_user):
+    r = client.get(f"{API}/lab/model-eval", headers=as_user("ananya"))
+    if r.status_code == 404:
+        pytest.skip("no evaluation report — run `make train`")
+    rep = r.json()
+    assert [s["key"] for s in rep["test_sets"]] == ["cv", "heldout", "later"]
+    assert {row["method"] for s in rep["test_sets"] for row in s["rows"]} == {"RB-1", "RB-2", "M7", "M7-structure"}
+
+
+def test_queue_is_ordered_by_priority_then_suspicion(client, as_user):
+    rows = client.get(f"{API}/alerts", headers=as_user("ananya")).json()
+    order = {"P1": 0, "P2": 1, "P3": 2}
+    keys = [(order[r["priority"]], -(r["suspicion"] or 0.0)) for r in rows]
+    assert keys == sorted(keys), "M7 orders alerts inside a band and never moves one across bands"
+    assert all(r["case_key"] for r in rows), "every queued alert belongs to a connected case"
 
 
 def test_copilot_answers_are_cited(client, as_user, insider):

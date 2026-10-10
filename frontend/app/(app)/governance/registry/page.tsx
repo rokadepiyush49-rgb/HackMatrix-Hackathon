@@ -66,7 +66,7 @@ export default function RegistryPage() {
                     ))}
                   </div>
                   <div className="mt-3 flex flex-wrap gap-1">{m.features.map((f) => <Chip key={f} tone="faint" className="!normal-case">{f}</Chip>)}</div>
-                  <p className="mt-2 text-[11px] text-faint">{String(m.metrics.note ?? "")} Training seed {m.train_seed}, n = {m.n_train.toLocaleString("en-IN")}.</p>
+                  <p className="mt-2 text-[11px] text-faint">{String(m.metrics.note ?? "")} Training worlds {m.train_seeds?.join(", ") ?? "—"}, n = {m.n_train.toLocaleString("en-IN")}.</p>
                 </Panel>
               ))}
             </div>

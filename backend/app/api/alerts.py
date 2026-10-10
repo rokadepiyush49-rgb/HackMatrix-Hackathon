@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.common import PRIORITY_ORDER, alert_full, alert_summary, chain_links, link_dict
+from app.api.common import alert_full, alert_summary, chain_links, link_dict, queue_order
 from app.core import audit
 from app.core.db import get_db
 from app.core.security import CurrentUser, Principal, require
@@ -38,7 +38,7 @@ def list_alerts(p: CurrentUser, db: Annotated[Session, Depends(get_db)],
         ql = q.lower()
         out = [x for x in out if ql in x["claim"].lower() or ql in x["id"].lower()
                or any(ql in e.lower() for e in x["entity_refs"])]
-    return sorted(out, key=lambda x: (PRIORITY_ORDER.get(x["priority"], 9), -x["amount_at_risk"]))
+    return sorted(out, key=queue_order)
 
 
 @router.get("/alerts/{alert_id}")
@@ -80,7 +80,7 @@ def list_chains(p: CurrentUser, db: Annotated[Session, Depends(get_db)], kind: s
         s["features"] = c.features
         s["n_links"] = len(chain_links(db, c.id))
         out.append(s)
-    return sorted(out, key=lambda x: (PRIORITY_ORDER.get(x["priority"], 9), -x["amount_at_risk"]))
+    return sorted(out, key=queue_order)
 
 
 @router.get("/chains/{chain_id}")

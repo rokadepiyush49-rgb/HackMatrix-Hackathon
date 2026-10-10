@@ -23,8 +23,10 @@ from app.loom.frames import Frames, load_frames
 from app.loom.models import ScenarioRun
 from app.mend.controls import friction
 from app.ml import baselines
+from app.ml.case_features import case_rows
+from app.ml.cases import build_cases
 from app.ml.features import mule_frame
-from app.ml.models import score_mules
+from app.ml.models import score_cases, score_mules
 from app.needle import chains as N
 from app.needle import er
 from app.needle.detectors import graph as G
@@ -38,10 +40,12 @@ def _log(msg: str, t0: float) -> None:
 Progress = Callable[[str, str | None], None]
 
 
-def compute(f: Frames, log=True, progress: Progress | None = None) -> dict:
+def compute(f: Frames, log=True, progress: Progress | None = None, models: bool = True) -> dict:
     """Run every stage in memory and return the results (no database writes).
 
     `progress(stage, None)` is called as a stage starts and `progress(stage, summary)` as it ends.
+    `models=False` switches every learned input off (M5, M6, M7): the lattice then runs on rules alone,
+    which is the RB-2 baseline, and the result does not depend on any trained artifact.
     """
     t0 = time.perf_counter()
 
@@ -116,15 +120,20 @@ def compute(f: Frames, log=True, progress: Progress | None = None) -> dict:
 
     begin("brief")
     mf_frame = mule_frame(f)
-    mules = score_mules(mf_frame)
-    out["mule_scores"] = mules
-    ctx = BriefContext(f, ix, sig, links, clusters, cluster_ev, sess, nav, mules)
+    mules = score_mules(mf_frame) if models else pd.DataFrame(columns=["p", "contributions"])
+    out.update(mule_frame=mf_frame, mule_scores=mules)
+    ctx = BriefContext(f, ix, sig, links, clusters, cluster_ev, sess, nav, mules, chain_model=models)
     out["context"] = ctx
     briefs = [brief_for(ctx, d) for d in drafts]
     out["briefs"] = briefs
+    cases = build_cases(sig, drafts, (f.window_start, f.window_end))
+    rows = case_rows(cases, f, ex, mf_frame)
+    scores = score_cases(rows) if models else {}
+    out.update(cases=cases, case_rows=rows, case_scores=scores)
     counts = pd.Series([b.priority for b in briefs]).value_counts().to_dict()
     done("brief", "Brief: " + ", ".join(f"{counts[k]} {k}" for k in ("P1", "P2", "P3", "WATCH", "EXPLAINED")
-                                        if k in counts))
+                                        if k in counts)
+         + f" · {len(cases)} connected cases" + (" ranked by M7" if scores else ""))
     return out
 
 
@@ -282,12 +291,16 @@ def _write(cur, res: dict, f: Frames, briefs: list[BriefResult], ids: list[tuple
     _copy(cur, "relationship", ["id", "src_type", "src_id", "dst_type", "dst_id", "rel_type", "source", "confidence",
                                 "detail", "valid_from"], rel_rows)
 
-    # mule predictions
+    # mule predictions, and M7 suspicion scores for connected cases
     now = datetime.now(UTC)
     ms = res["mule_scores"]
+    cases, scores = res.get("cases", []), res.get("case_scores", {})
     _copy(cur, "model_prediction", ["id", "model", "version", "entity_ref", "p", "contributions", "created_at"],
           [[f"M6:{a}", "M6", "1.0", a, float(r.p), _json(r.contributions[:6]), now]
-           for a, r in ms.iterrows() if r.p >= 0.05])
+           for a, r in ms.iterrows() if r.p >= 0.05]
+          + [[f"M7:{c.key}", "M7", "1.0", c.key, scores[c.key].p, _json(scores[c.key].contributions[:6]), now]
+             for c in cases if c.key in scores and (c.chains or scores[c.key].p >= 0.05)])
+    case_of = {(d.kind, d.root_ref): c for c in cases for d in c.chains}
 
     # chains, links, alerts, evidence
     chain_rows, link_rows, alert_rows, ev_rows = [], [], [], []
@@ -309,6 +322,7 @@ def _write(cur, res: dict, f: Frames, briefs: list[BriefResult], ids: list[tuple
         state = {"EXPLAINED": "SUPPRESSED", "WATCH": "WATCH"}.get(b.priority, "OPEN")
         arg = dict(b.argument)
         arg["dims_rule"] = b.lattice_rule
+        arg["case"] = _case_card(case_of.get((d.kind, d.root_ref)), scores)
         alert_rows.append([aid, cid, b.typology, b.claim, b.priority, b.lattice_rule,
                            _json([dm.as_dict() for dm in b.dims]), _json(_clean(arg)), b.recoverable, state, None,
                            d.last_t + pd.Timedelta(minutes=2), None])
@@ -326,6 +340,19 @@ def _write(cur, res: dict, f: Frames, briefs: list[BriefResult], ids: list[tuple
     _copy(cur, "evidence", ["id", "alert_id", "code", "kind", "summary", "source_system", "source_table", "source_ref",
                             "reliability", "credibility", "observed_at", "ingested_at", "entities", "facts", "supports",
                             "rebuts", "sha256"], ev_rows)
+
+
+def _case_card(c, scores: dict) -> dict | None:
+    """The connected case an alert belongs to, and M7's suspicion score for it (None when M7 is offline)."""
+    if c is None:
+        return None
+    sc = scores.get(c.key)
+    return {"key": c.key, "chains": len(c.chains), "accounts": sum(e.startswith("A-") for e in c.entities),
+            "linked_cases": sorted(c.linked_cases)[:12], "detectors": sorted(c.detectors),
+            "suspicion": None if sc is None else {
+                "model": "M7 connected-case prioritiser", "p": sc.p, "above_threshold": sc.alert,
+                "label": "Suspicion score (model) — a reason to look first, not a finding",
+                "contributions": sc.contributions[:6]}}
 
 
 def _alibi_public(card: dict | None) -> dict | None:

@@ -673,15 +673,16 @@ def legitimate_lookalikes(w: World) -> None:
     rng = w.rng
     days = working_days()[5:-5]
     branches = sorted({v["branch_id"] for v in w.employees.values()})
-    for _ in range(60):  # Video-KYC
+    for n in range(60):  # Video-KYC
         bid = rng.choice(branches)
         officer = rng.choice([e for e, v in w.employees.items() if v["branch_id"] == bid] or list(w.employees))
         t = at(rng.choice(days), rng.randint(10, 18), rng.randint(0, 59))
         cust = new_customer(w, bid, rng.choice(["SALARIED", "STUDENT", "SELF_EMPLOYED"]), t)
         w.work_item("VCIP", f"VCIP-{rng.randint(100000, 999999)}", t - timedelta(minutes=15), cust["id"], None,
                     officer, bid, "Video-KYC session — liveness and PAN verified", 18)
-        new_account(w, cust, "SAVINGS", t, officer, officer if rng.random() < 0.3 else None, "VIDEO_KYC", 0)
-    for _ in range(25):  # single-officer branch exception
+        acct = new_account(w, cust, "SAVINGS", t, officer, officer if rng.random() < 0.3 else None, "VIDEO_KYC", 0)
+        _label(w, "S9", "twin", [cust["id"], acct["id"]], [acct["id"]], instance=f"S9-vkyc-{n}", lookalike="VIDEO_KYC")
+    for n in range(25):  # single-officer branch exception
         bid = rng.choice(branches)
         officer = rng.choice([e for e, v in w.employees.items() if v["branch_id"] == bid] or list(w.employees))
         t = at(rng.choice(days), rng.randint(10, 16), rng.randint(0, 59))
@@ -690,15 +691,21 @@ def legitimate_lookalikes(w: World) -> None:
                     officer, bid, "Counter token — account opening", 20)
         w.work_item("EKYC", f"EKYC-{rng.randint(100000, 999999)}", t, cust["id"], None, officer, bid,
                     "Aadhaar biometric eKYC — success; single-officer exception logged", 2)
-        new_account(w, cust, "SAVINGS", t, officer, officer, "BRANCH_BIOMETRIC", 0)
+        acct = new_account(w, cust, "SAVINGS", t, officer, officer, "BRANCH_BIOMETRIC", 0)
+        _label(w, "S9", "twin", [cust["id"], acct["id"]], [acct["id"]], instance=f"S9-solo-{n}",
+               lookalike="SINGLE_OFFICER")
     for n in range(30):  # households: one phone number and/or one family device across members
         bid = rng.choice(branches)
         t = at(rng.choice(days), rng.randint(10, 16), rng.randint(0, 59))
         phone = w.phone() if n % 2 == 0 else None
         family_device = new_device(w, "ANDROID", t) if n % 3 != 0 else None
+        members: list[str] = []
         for _member in range(rng.randint(2, 3)):
             cust = new_customer(w, bid, rng.choice(["HOMEMAKER", "STUDENT", "SALARIED"]), t, phone=phone)
             officer = rng.choice([e for e, v in w.employees.items() if v["branch_id"] == bid] or list(w.employees))
-            new_account(w, cust, "SAVINGS", t, officer, None, "BRANCH_BIOMETRIC", 0)
+            acct = new_account(w, cust, "SAVINGS", t, officer, None, "BRANCH_BIOMETRIC", 0)
+            members += [cust["id"], acct["id"]]
             if family_device:
                 w.customer_device[cust["id"]] = family_device
+        _label(w, "S9", "twin", members + ([family_device] if family_device else []), [], instance=f"S9-house-{n}",
+               lookalike="HOUSEHOLD")

@@ -140,6 +140,19 @@ def lab_report(p: CurrentUser, db: Annotated[Session, Depends(get_db)]) -> dict:
     return res
 
 
+@router.get("/lab/model-eval")
+def model_eval(p: CurrentUser) -> dict:
+    """M7 against the rule baselines on held-out cases and later events (written by `make train`)."""
+    import json
+
+    from app.lab.heldout import REPORTS
+
+    path = REPORTS / "fin04_eval.json"
+    if not path.exists():
+        raise HTTPException(404, "No model evaluation yet — run `make train`")
+    return json.loads(path.read_text())
+
+
 class FlipIn(BaseModel):
     key: str = "S4-twin"
 
