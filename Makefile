@@ -5,7 +5,7 @@ DB    ?= sutra
 export PYTHONPATH := $(CURDIR)/backend:$(CURDIR)/data/kestrel_sim
 PY    := uv run --no-sync
 
-.PHONY: help setup db migrate seed train detect demo api web test lint typecheck clean
+.PHONY: help setup db migrate seed train detect demo live-play live-reset bank-check api web test lint typecheck check up down images helm-lint tf-check clean
 
 help:            ## Show this help
 	@grep -E '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[1m%-10s\033[0m %s\n",$$1,$$2}'
@@ -31,6 +31,15 @@ detect:          ## Run the full pipeline: signals → chains → alibi → brie
 
 demo: seed train detect  ## Everything needed for the demo, from scratch
 
+live-play:       ## Stream tonight's held-back feed into Loom and detect (what Live Ops does)
+	$(PY) python -m app.cli live-play
+
+live-reset:      ## Undo the live feed and re-detect — ready to demo again
+	$(PY) python -m app.cli live-reset
+
+bank-check:      ## Run every mock-bank scenario through SUTRA, check outcomes, undo (docs/mock-bank)
+	$(PY) python -m app.cli bank-check
+
 api:             ## Run the API on :8000
 	cd backend && $(PY) uvicorn app.main:app --reload --port 8000
 
@@ -46,6 +55,29 @@ lint:            ## Lint Python + TypeScript
 
 typecheck:       ## Type-check the frontend
 	cd frontend && npm run typecheck
+
+check: lint typecheck test   ## Everything CI's application lane runs
+	cd frontend && npm run build
+
+# ── Platform ────────────────────────────────────────────────────────────────
+up:              ## Full stack in containers (docker compose)
+	docker compose up --build
+
+down:            ## Stop the stack and delete its volumes
+	docker compose down -v
+
+images:          ## Build both production images locally
+	docker build -f docker/api.Dockerfile -t sutra-api:local .
+	docker build -f docker/web.Dockerfile -t sutra-web:local .
+
+helm-lint:       ## Lint and render the Helm chart for every environment
+	helm lint deploy/helm/sutra -f deploy/helm/sutra/values-prod.yaml
+	for env in staging prod; do helm template sutra deploy/helm/sutra -f deploy/helm/sutra/values-$$env.yaml > /dev/null; done
+
+tf-check:        ## terraform fmt + validate every root (no credentials needed)
+	terraform fmt -check -recursive infra/terraform
+	for d in infra/terraform/bootstrap infra/terraform/envs/staging infra/terraform/envs/prod; do \
+	  terraform -chdir=$$d init -backend=false -input=false >/dev/null && terraform -chdir=$$d validate; done
 
 clean:           ## Remove generated data and caches
 	rm -rf data/generated var .pytest_cache .ruff_cache
