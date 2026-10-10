@@ -43,6 +43,7 @@ and argue every alert both ways: **with evidence, never a score.**
 - [Tech stack](#tech-stack)
 - [Production platform](#production-platform)
 - [Live demo: raw events to a P1](#live-demo-raw-events-to-a-p1)
+- [Final round (FIN-04): what changed](#final-round-fin-04-what-changed)
 - [Getting started](#getting-started)
 - [Repository layout](#repository-layout)
 - [Architecture decisions](#architecture-decisions)
@@ -238,7 +239,7 @@ or its look-alikes.
 |---|---|
 | **Backend** | Python 3.12 · FastAPI · SQLAlchemy 2 · Alembic · PostgreSQL (psycopg 3) · Pydantic Settings · PyJWT · slowapi |
 | **Detection & ML** | pandas · NumPy · NetworkX · scikit-learn · LightGBM · RapidFuzz |
-| **AI (optional)** | Anthropic SDK (Claude), behind a cite-or-drop verifier |
+| **AI (optional)** | Groq (`openai/gpt-oss-120b`) for Investigation Council agents inside a grounding harness; Anthropic SDK (Claude) for Ask SUTRA. Both behind cite-or-drop verification |
 | **Reports** | ReportLab (PDF evidence packs) |
 | **Frontend** | Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · TanStack Query · Radix UI · React Flow · Motion · Recharts · cmdk · Poppins |
 | **Tooling** | uv workspace · npm · Ruff · pytest · ESLint · pre-commit |
@@ -299,6 +300,27 @@ The on-site walkthrough, with timings, talking points and fallbacks, is in
 [`docs/demo/DEMO_SCRIPT.md`](docs/demo/DEMO_SCRIPT.md). Rehearse from a terminal with
 `make live-play` and `make live-reset`.
 
+## Final round (FIN-04): what changed
+
+The final-round work, with its evidence and test results, is in
+[`docs/audit/IMPLEMENTATION_STATUS.md`](docs/audit/IMPLEMENTATION_STATUS.md). The starting audit is in
+[`docs/audit/PROJECT_AUDIT.md`](docs/audit/PROJECT_AUDIT.md).
+
+- **Incremental ingest** that converges whatever the arrival order. Every delivery gets a receipt (new,
+  duplicate absorbed, conflict refused, late), and **append-only case revisions** say why each case
+  changed. `make replay` proves the convergence; Live Ops can play the evening late, duplicated or
+  shuffled ([ADR 018](docs/adr/018-incremental-ingest-and-case-revisions.md)).
+- **Investigation Council agents on Groq**, inside a harness that checks every citation, figure and
+  status, enforces budgets and tool allowlists, and falls back to the deterministic council
+  ([ADR 019](docs/adr/019-council-agents-and-harness.md),
+  [architecture](docs/architecture/INVESTIGATION_COUNCIL.md)).
+- **Model registry**: candidates are validated before promotion, archived and rollback-able, and refused
+  if altered ([ADR 022](docs/adr/022-model-lifecycle.md), [lifecycle](docs/ml/MODEL_LIFECYCLE.md)).
+  **M1/M2** were measured against rule baselines, and M2's signal threshold was recalibrated on held-out
+  worlds ([ADR 021](docs/adr/021-behavioural-baselines-m1-m2.md)).
+- **Account Aggregator**: consent → fetch → evidence, demoed on a labelled synthetic FIP
+  ([ADR 023](docs/adr/023-account-aggregator.md), [integration](docs/integrations/ACCOUNT_AGGREGATOR.md)).
+
 ## Getting started
 
 ### Prerequisites
@@ -351,6 +373,9 @@ investigator) first, then **Suresh Iyer** (vigilance) to experience the four-eye
 > Postgres needs a user and password? Set `SUTRA_DATABASE_URL` in `.env`,
 > e.g. `postgresql+psycopg://user:password@localhost:5432/sutra`.
 > Claude-written answers in Ask SUTRA are optional: add `ANTHROPIC_API_KEY` to `.env`.
+> Council agents are optional too: add `GROQ_API_KEY` to `.env` (server-side only, never `frontend/`).
+> The Account Aggregator demo needs no setup; `.env.example` lists the Setu sandbox settings.
+> Upgrading a database from before the final round? Run `make migrate`: the final round adds tables.
 
 ### Make targets
 
@@ -362,6 +387,8 @@ investigator) first, then **Suresh Iyer** (vigilance) to experience the four-eye
 | `make train` | Train M5, M6 and M7 on worlds 7–10, then evaluate M7 against the rule baselines (`ml/reports/`) |
 | `make detect` | Run the pipeline: signals → chains → alibi → briefs |
 | `make live-play` / `make live-reset` | Stream the held-back evening and detect / undo it and re-detect (what Live Ops does) |
+| `make replay` | Replay the evening late, duplicated, shuffled and reversed; check every order converges (`ml/reports/replay`) |
+| `make eval-behaviour` | Evaluate M1/M2 against rule baselines on worlds 7–11 (`ml/reports/m1_m2_eval.json`) |
 | `make api` / `make web` | Start the API on :8000 / the web app on :3000 |
 | `make test` | Backend tests, including the scenario twins |
 | `make lint` / `make typecheck` | Ruff + ESLint / TypeScript checks |

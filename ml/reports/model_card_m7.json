@@ -409,7 +409,7 @@
   "cv": "StratifiedGroupKFold: a group is every case, chain and account that ground truth ties together (one ring, or rings that share accounts). No group appears in two folds.",
   "use": "Orders the queue inside each priority band and is shown as a suspicion score. It never sets P1, never closes a case and is never a determination \u2014 that stays with four-eyes review.",
   "libraries": {
-    "python": "3.12.14",
+    "python": "3.12.13",
     "numpy": "2.5.3",
     "scikit-learn": "1.9.1",
     "lightgbm": "4.7.0"

@@ -22,5 +22,11 @@ differs from the long-term architecture. Format: context → decision → conseq
 | [015](015-llm-residency.md) | LLM narration off in production until inference can stay in India | Accepted |
 | [016](016-live-feed-demo.md) | A live feed for the end-to-end demo; detection re-runs keep IDs and cases | Accepted |
 | [017](017-learned-prioritisation.md) | Connected cases, a learned prioritiser (M7) and a documented rule baseline | Accepted |
+| [018](018-incremental-ingest-and-case-revisions.md) | Order-independent incremental ingest; append-only case revisions | Accepted |
+| [019](019-council-agents-and-harness.md) | Council agents on Groq inside a harness that enforces grounding | Accepted |
+| [020](020-context-budgets.md) | Context budgets: batch whole items, never truncate, report coverage | Accepted |
+| [021](021-behavioural-baselines-m1-m2.md) | Keep M1/M2; M2 signal threshold 0.5% → 2% on held-out evidence | Accepted |
+| [022](022-model-lifecycle.md) | Train globally; promote only validated candidates; roll back | Accepted |
+| [023](023-account-aggregator.md) | Account Aggregator as consented evidence; synthetic FIP for the demo | Accepted |
 
 For every library and service — *why this, not that* — see [`docs/TECH_DECISIONS.md`](../TECH_DECISIONS.md).

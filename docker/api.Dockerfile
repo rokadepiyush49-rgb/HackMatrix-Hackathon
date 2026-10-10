@@ -3,7 +3,7 @@
 #
 # Stages
 #   deps     resolve the locked dependency set once; cached until uv.lock changes
-#   models   train M5/M6 from code + seed 7 — model binaries are build outputs, never committed
+#   models   train M5/M6/M7 on worlds 7–10, validate, promote (app.ml.registry) — model binaries are build outputs, never committed
 #   runtime  slim, non-root, no compilers, no package manager caches
 #
 # Build:  docker buildx build -f docker/api.Dockerfile --platform linux/amd64,linux/arm64 .
@@ -35,8 +35,9 @@ COPY backend backend
 COPY data/kestrel_sim data/kestrel_sim
 COPY data/scenarios data/scenarios
 ENV PYTHONPATH=/app/backend:/app/data/kestrel_sim PATH=/opt/venv/bin:$PATH
-# Deterministic: same code + same seed → same model. The model card records seed and metrics.
-RUN python -m app.cli train --seed 7
+# Deterministic: same code + same worlds (seeds 7–10) → same model. Training ignores --seed; the registry
+# records the worlds, metrics, libraries and the validation that promoted each model.
+RUN python -m app.cli train
 
 # ── runtime ─────────────────────────────────────────────────────────────────
 FROM python:${PYTHON_VERSION}-slim-bookworm AS runtime
@@ -67,7 +68,7 @@ COPY --from=deps /opt/venv /opt/venv
 COPY --chown=root:root backend backend
 COPY --chown=root:root data/kestrel_sim data/kestrel_sim
 COPY --chown=root:root data/scenarios data/scenarios
-COPY --from=models --chown=root:root /app/ml ml
+COPY --from=models --chown=10001:10001 /app/ml ml
 
 # Code is owned by root and read-only to the app user; only /tmp (an emptyDir in Kubernetes) is writable.
 USER 10001:10001

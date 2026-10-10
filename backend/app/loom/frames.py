@@ -62,10 +62,12 @@ class Frames:
 
 
 def load_frames() -> Frames:
+    """Every table in primary-key order. Without ORDER BY, Postgres returns rows in physical order, which
+    follows the order rows arrived and were updated — detection must not see that (FIN-04 replay)."""
     out = {}
     with engine.connect() as conn:
         for t in TABLES:
-            df = pd.read_sql(text(f"SELECT * FROM {t}"), conn)
+            df = pd.read_sql(text(f"SELECT * FROM {t} ORDER BY id"), conn)
             for c in TIME_COLS.get(t, []):
                 if c in df:
                     # pandas 3 reads microsecond resolution; normalise to ns so .value comparisons agree

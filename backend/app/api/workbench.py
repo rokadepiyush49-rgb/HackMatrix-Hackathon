@@ -2,22 +2,26 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
-from typing import Annotated
+import logging
+import threading
+import uuid
+from datetime import UTC, datetime, timedelta
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app.api.common import alert_full, iso, latest_run
 from app.copilot.engine import ask, str_draft
 from app.core import audit
-from app.core.db import get_db
+from app.core.db import SessionLocal, get_db
 from app.core.security import CurrentUser, Principal, require
 from app.council.engine import AGENTS, MODERATOR, RECORDS, Council
 from app.loom.models import (
     Account,
+    CouncilRun,
     Roster,
     ScenarioLabel,
     WorkItem,
@@ -108,16 +112,179 @@ def council_agents(p: CurrentUser) -> dict:
             "records": [{"key": k, "label": v[0], "system": v[1], "ingested": v[2]} for k, v in RECORDS.items()]}
 
 
-@router.get("/council/{alert_id}")
-def council(alert_id: str, db: Annotated[Session, Depends(get_db)],
-            p: Annotated[Principal, Depends(require("cases:read"))]) -> dict:
+@router.get("/council/status")
+def council_status(p: Annotated[Principal, Depends(require("cases:read"))], check: bool = False) -> dict:
+    """Which engine the council uses and, with `check`, whether Groq accepts the key and serves the model.
+    The key itself is never returned."""
+    from app.core.config import get_settings
+    from app.council.harness import PROMPT_VERSION
+    from app.council.llm import MODEL_LIMITS, LLMError, client_from_settings
+
+    s = get_settings()
+    out = {"configured_engine": s.council_engine, "key_configured": bool(s.groq_api_key), "model": s.groq_model,
+           "model_facts": MODEL_LIMITS.get(s.groq_model), "prompt_version": PROMPT_VERSION,
+           "effective_engine": "llm" if s.groq_api_key and s.council_engine != "deterministic" else "deterministic",
+           "budgets": {"calls": s.council_max_calls, "tokens": s.council_token_budget, "deadline_s": s.council_deadline_s}}
+    if check:
+        try:
+            client = client_from_settings()
+            out["check"] = client.check() if client else {"ok": False, "kind": "config", "detail": "no Groq key configured"}
+        except LLMError as e:
+            out["check"] = {"ok": False, "kind": e.kind, "detail": str(e)}
+    return out
+
+
+def _council_inputs(db: Session, alert_id: str) -> tuple[dict, dict | None, dict]:
     detail = alert_full(db, alert_id)
     detail["latency_s"] = detail.get("latency_s")
     m = _mend(db, detail, [])
-    result = Council(detail, m, _lookups(db, detail)).run()
-    audit.append(db, p.id, "council.run", alert_id, {"outcome": result["consensus"]["outcome"]})
+    detail["mend"] = m
+    look = _lookups(db, detail)
+    _with_account_aggregator(db, detail, look)
+    return detail, m, look
+
+
+def _with_account_aggregator(db: Session, detail: dict, look: dict) -> None:
+    """Consented statements for the case's customers become labelled evidence and answer 'source of funds'."""
+    from app.core.config import get_settings
+    from app.integrations.aa.service import evidence_for
+
+    s = get_settings()
+    if s.aa_provider == "synthetic" and not s.demo_mode:
+        return
+    accounts = [e for e in detail.get("entity_refs") or [] if e.startswith("A-")]
+    if detail.get("account"):
+        accounts.append(detail["account"]["id"])
+    customers = sorted(set(db.execute(text("SELECT customer_id FROM account WHERE id = ANY(:a) AND customer_id IS NOT NULL"),
+                                      {"a": accounts}).scalars()))
+    items, sof = evidence_for(db, customers)
+    if sof:
+        look["sof"] = {**sof, "system": "Account Aggregator"}
+    if items:
+        have = {e["code"] for e in detail["evidence"]}
+        detail["evidence"] += [e for e in items if e["code"] not in have]
+
+
+def _case_identity(db: Session, alert_id: str) -> tuple[str | None, str | None]:
+    from app.brief import revisions
+
+    key = db.execute(text("SELECT c.kind || '|' || c.root_ref FROM alert a JOIN chain c ON c.id = a.chain_id "
+                          "WHERE a.id = :a"), {"a": alert_id}).scalar()
+    snap = revisions.snapshots(db.connection()).get(key) if key else None
+    return key, revisions.content_sha(snap) if snap else None
+
+
+def _run_view(r: CouncilRun, current_sha: str | None) -> dict:
+    return {"run_id": r.id, "status": r.status, "engine": r.engine, "requested_engine": r.requested_engine,
+            "model": r.model, "prompt_version": r.prompt_version, "actor": r.actor,
+            "started_at": iso(r.started_at), "finished_at": iso(r.finished_at), "usage": r.usage, "coverage": r.coverage,
+            "error": r.error, "stale": bool(current_sha and r.case_sha256 and r.case_sha256 != current_sha)}
+
+
+@router.get("/council/{alert_id}")
+def council(alert_id: str, db: Annotated[Session, Depends(get_db)],
+            p: Annotated[Principal, Depends(require("cases:read"))], engine: str | None = None) -> dict:
+    """The latest saved council run for the alert; without one (or with `engine=deterministic`), the
+    deterministic council computed now."""
+    if engine != "deterministic":
+        saved = db.execute(select(CouncilRun).where(CouncilRun.alert_id == alert_id, CouncilRun.result.is_not(None))
+                           .order_by(CouncilRun.started_at.desc()).limit(1)).scalars().first()
+        if saved is not None:
+            _, sha = _case_identity(db, alert_id)
+            return {**saved.result, "run": _run_view(saved, sha)}
+    detail, m, look = _council_inputs(db, alert_id)
+    result = Council(detail, m, look).run()
+    result["engine"] = "deterministic"
+    audit.append(db, p.id, "council.run", alert_id, {"outcome": result["consensus"]["outcome"], "engine": "deterministic"})
     db.commit()
     return result
+
+
+class CouncilRunIn(BaseModel):
+    engine: Literal["auto", "llm", "deterministic"] = "auto"
+
+
+_council_cancel: dict[str, threading.Event] = {}
+
+
+def _council_worker(run_id: str, alert_id: str, engine: str, actor: str) -> None:
+    from app.council.agentic import run_council
+
+    cancel = _council_cancel.setdefault(run_id, threading.Event())
+    try:
+        with SessionLocal() as db:
+            detail, m, look = _council_inputs(db, alert_id)
+        result = run_council(detail, m, look, engine, cancel)
+        cov = result.get("coverage") or {}
+        status = ("FALLBACK" if result.get("fallback_reason") else
+                  "PARTIAL" if cov.get("partial") else "COMPLETE")
+        with SessionLocal() as db:
+            r = db.get(CouncilRun, run_id)
+            r.status, r.engine, r.finished_at = status, result.get("engine"), datetime.now(UTC)
+            r.model, r.prompt_version = result.get("model"), result.get("prompt_version")
+            r.usage = (result.get("trace") or {}).get("usage") or {"seconds": result["stats"].get("seconds")}
+            r.coverage, r.trace = cov, result.get("trace") or {}
+            r.result = {k: v for k, v in result.items() if k != "trace"}
+            r.error = result.get("fallback_reason")
+            audit.append(db, actor, "council.run", alert_id, {"run": run_id, "engine": r.engine, "status": status,
+                                                               "outcome": result["consensus"]["outcome"],
+                                                               "llm_calls": result["stats"].get("llm_calls", 0)})
+            db.commit()
+    except Exception as e:  # recorded on the run; never leaves a run stuck in RUNNING
+        logging.getLogger("sutra.council").exception("council.run.failed run=%s", run_id)
+        with SessionLocal() as db:
+            r = db.get(CouncilRun, run_id)
+            if r is not None:
+                r.status, r.finished_at, r.error = "FAILED", datetime.now(UTC), f"{type(e).__name__}: see the API log"
+                db.commit()
+    finally:
+        _council_cancel.pop(run_id, None)
+
+
+@router.post("/council/{alert_id}/runs", status_code=202)
+def start_council(alert_id: str, body: CouncilRunIn, db: Annotated[Session, Depends(get_db)],
+                  p: Annotated[Principal, Depends(require("cases:investigate"))]) -> dict:
+    """Convene the council (LLM agents when configured). Runs in the background; poll the run."""
+    from app.core.config import get_settings
+
+    alert_full(db, alert_id)  # 404 for an unknown alert
+    horizon = datetime.now(UTC) - timedelta(seconds=get_settings().council_deadline_s + 60)
+    busy = db.execute(select(CouncilRun).where(CouncilRun.alert_id == alert_id, CouncilRun.status == "RUNNING",
+                                               CouncilRun.started_at > horizon)).scalars().first()
+    if busy:
+        raise HTTPException(409, f"The council is already sitting on {alert_id} ({busy.id}).")
+    key, sha = _case_identity(db, alert_id)
+    run_id = f"CR-{uuid.uuid4().hex[:10].upper()}"
+    db.add(CouncilRun(id=run_id, alert_id=alert_id, alert_key=key, case_sha256=sha, requested_engine=body.engine,
+                      status="RUNNING", actor=p.id, started_at=datetime.now(UTC), usage={}, coverage={}, trace={}))
+    audit.append(db, p.id, "council.convene", alert_id, {"run": run_id, "engine": body.engine})
+    db.commit()
+    threading.Thread(target=_council_worker, args=(run_id, alert_id, body.engine, p.id), name=f"sutra-{run_id}",
+                     daemon=True).start()
+    return {"run_id": run_id, "status": "RUNNING"}
+
+
+@router.get("/council/runs/{run_id}")
+def council_run(run_id: str, db: Annotated[Session, Depends(get_db)],
+                p: Annotated[Principal, Depends(require("cases:read"))], trace: bool = True) -> dict:
+    r = db.get(CouncilRun, run_id)
+    if r is None:
+        raise HTTPException(404, "Unknown council run")
+    _, sha = _case_identity(db, r.alert_id)
+    out = {**_run_view(r, sha), "alert_id": r.alert_id}
+    if trace:
+        out["trace"] = r.trace
+    if r.result is not None:
+        out["result"] = r.result
+    return out
+
+
+@router.post("/council/runs/{run_id}/cancel")
+def cancel_council(run_id: str, p: Annotated[Principal, Depends(require("cases:investigate"))]) -> dict:
+    ev = _council_cancel.get(run_id)
+    if ev:
+        ev.set()
+    return {"run_id": run_id, "cancelling": bool(ev)}
 
 
 # ── Scenario Lab ───────────────────────────────────────────────────────────

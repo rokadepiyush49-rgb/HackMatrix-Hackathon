@@ -28,7 +28,7 @@ from datetime import UTC, datetime
 import numpy as np
 from sklearn.metrics import average_precision_score
 
-from app.core.config import REPO_ROOT
+from app.core.config import get_settings
 from app.lab.rule_baseline import QUEUED, describe
 from app.ml.case_features import CASE_LABELS, CaseRow
 from app.ml.models import explain_cases
@@ -38,7 +38,7 @@ METHODS = ["RB-1", "RB-2", "M7", "M7-structure"]
 METHOD_LABELS = {"RB-1": "Rule baseline RB-1", "RB-2": "SUTRA lattice, rules only (RB-2)",
                  "M7": "M7 connected-case prioritiser", "M7-structure": "M7 without detector features"}
 B = 1000
-REPORTS = REPO_ROOT / "ml" / "reports"
+REPORTS = get_settings().reports_path
 RB2_ORDINAL = {"P1": 3.0, "P2": 2.0, "P3": 1.0, "WATCH": 0.5}
 
 
@@ -237,4 +237,4 @@ def _print(report: dict) -> None:
         for r in s["rows"]:
             print(f"    {r['method']:<13} alerts {r['alerts']:>4}  P {fmt(r['precision'])}  R {fmt(r['recall'])}  "
                   f"F1 {fmt(r['f1'])}  look-alike FP {fmt(r['lookalike_fp_rate'])}")
-    print(f"  → {REPORTS.relative_to(REPO_ROOT)}/fin04_eval.json, heldout_predictions.csv, rule_baseline.json")
+    print(f"  → {REPORTS}/fin04_eval.json, heldout_predictions.csv, rule_baseline.json")

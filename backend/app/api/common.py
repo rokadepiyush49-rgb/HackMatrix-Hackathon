@@ -116,7 +116,7 @@ def alert_full(db: Session, alert_id: str) -> dict:
         "evidence": [evidence_dict(e) for e in ev], "features": c.features, "contributions": c.contributions,
         "employee": employee_card(db, emp),
         "account": {"id": acct.id, "holder_name": acct.holder_name, "status": acct.status, "kind": acct.kind,
-                    "balance": rupees(acct.balance_paise)} if acct else None,
+                    "balance": rupees(acct.balance_paise), "customer_id": acct.customer_id} if acct else None,
     })
     first_money = next((lk for lk in links if lk.code in ("E5", "F5")), None)
     enabling = next((lk for lk in links if lk.code == "E0"), None)

@@ -66,6 +66,15 @@ def refresh(body: RefreshIn, db: Annotated[Session, Depends(get_db)]) -> dict:
     return issue_tokens(user)
 
 
+@router.post("/logout")
+def logout(p: CurrentUser, db: Annotated[Session, Depends(get_db)]) -> dict:
+    """Record the sign-out in the audit chain. Tokens are stateless JWTs: the web app deletes its cookies,
+    and an unused access token lapses within SUTRA_JWT_ACCESS_MINUTES."""
+    audit.append(db, p.id, "auth.logout")
+    db.commit()
+    return {"ok": True}
+
+
 @router.get("/me", response_model=MeOut)
 def me(p: CurrentUser) -> dict:
     return {"id": p.id, "display_name": p.display_name, "role": p.role, "title": p.title,

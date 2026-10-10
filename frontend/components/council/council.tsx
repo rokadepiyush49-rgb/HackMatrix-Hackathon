@@ -43,6 +43,7 @@ export const STATUS_TONE: Record<string, Tone> = {
   RETRIEVED: "ok", NOT_FOUND: "amber", NOT_INGESTED: "faint", REFUTED: "faint",
 };
 const STATUS_LABEL: Record<string, string> = { NOT_FOUND: "nothing found", NOT_INGESTED: "not ingested" };
+const KIND_LABEL: Record<string, string> = { OBSERVED: "record", MODEL: "model output", INFERRED: "inference", HYPOTHESIS: "hypothesis" };
 
 const KIND: Record<CouncilEntry["kind"], { tone: Tone; label: string }> = {
   POSITION: { tone: "faint", label: "Position" },
@@ -271,7 +272,8 @@ export function ClaimRow({ cl, c, pool }: { cl: CouncilClaim; c: Council; pool: 
           <div className="mb-1 flex items-center gap-1.5">
             <Chip tone="faint">{cl.id}</Chip>
             <Chip tone={STATUS_TONE[cl.status]}>{cl.status.toLowerCase()}</Chip>
-            <span className="truncate text-[11px] text-muted">{owner?.name}</span>
+            {cl.kind && <Chip tone={cl.kind === "MODEL" || cl.kind === "HYPOTHESIS" ? "amber" : "faint"}>{KIND_LABEL[cl.kind]}</Chip>}
+            <span className="truncate text-[11px] text-muted">{owner?.name}{cl.engine === "llm" ? " · Groq agent" : cl.engine ? " · scripted" : ""}</span>
           </div>
           <p className="text-[12.5px] leading-snug text-ink">{cl.text}</p>
           <p className="mt-1 text-[11.5px] text-muted">{cl.interpretation}</p>

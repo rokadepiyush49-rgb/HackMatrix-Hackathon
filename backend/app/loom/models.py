@@ -494,3 +494,131 @@ class FeedEvent(Base):
     effect: Mapped[dict | None] = mapped_column(JSONB)
     strand: Mapped[str] = mapped_column(String(12))
     ingested_at: Mapped[datetime | None] = mapped_column(TS)
+    # Set on the first delivery: what was ingested (hash of table + row), when it arrived, how late.
+    content_sha256: Mapped[str | None] = mapped_column(String(64))
+    arrived_at: Mapped[datetime | None] = mapped_column(TS)
+    late_by_s: Mapped[int | None] = mapped_column(Integer)
+
+
+class FeedReceipt(Base):
+    """One delivery of a source row — every arrival, including duplicates and rejected conflicts.
+
+    `event_t` is when it happened (valid time), `arrived_at` when it reached SUTRA. Outcome NEW means the
+    row went in; DUPLICATE means the same row was already in and nothing changed; CONFLICT means a row
+    with the same ID but different content was refused. `effect` says whether its master-data change
+    was APPLIED or SUPERSEDED by a later-in-event-time change already in place (app.loom.feed).
+    """
+
+    __tablename__ = "feed_receipt"
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    seq: Mapped[int | None] = mapped_column(Integer)
+    ref: Mapped[str] = mapped_column(String(24), index=True)
+    source_table: Mapped[str] = mapped_column(String(24))
+    event_t: Mapped[datetime] = mapped_column(TS)
+    arrived_at: Mapped[datetime] = mapped_column(TS)
+    received_at: Mapped[datetime] = mapped_column(TS)
+    outcome: Mapped[str] = mapped_column(String(12))
+    late: Mapped[bool] = mapped_column(Boolean)
+    late_by_s: Mapped[int | None] = mapped_column(Integer)
+    effect: Mapped[str | None] = mapped_column(String(12))
+    content_sha256: Mapped[str] = mapped_column(String(64))
+    run_id: Mapped[str | None] = mapped_column(String(32), index=True)
+    detail: Mapped[dict] = mapped_column(JSONB, default=dict)
+
+
+class AAConsent(Base):
+    """A customer's Account Aggregator consent: who, which dates, why, and its state (app.integrations.aa)."""
+
+    __tablename__ = "aa_consent"
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    customer_id: Mapped[str] = mapped_column(String(16), index=True)
+    alert_id: Mapped[str | None] = mapped_column(String(24))
+    provider: Mapped[str] = mapped_column(String(16))
+    data_source: Mapped[str] = mapped_column(String(16))  # SYNTHETIC_DEMO | SANDBOX | LIVE
+    provider_consent_id: Mapped[str] = mapped_column(String(64))
+    status: Mapped[str] = mapped_column(String(12))  # PENDING | ACTIVE | REJECTED | REVOKED | EXPIRED
+    purpose: Mapped[str] = mapped_column(Text)
+    date_from: Mapped[date] = mapped_column(Date)
+    date_to: Mapped[date] = mapped_column(Date)
+    created_by: Mapped[str] = mapped_column(String(32))
+    created_at: Mapped[datetime] = mapped_column(TS)
+    approved_at: Mapped[datetime | None] = mapped_column(TS)
+    fetched_at: Mapped[datetime | None] = mapped_column(TS)
+    revoked_at: Mapped[datetime | None] = mapped_column(TS)
+    data_expires_at: Mapped[datetime | None] = mapped_column(TS)
+    redirect_url: Mapped[str | None] = mapped_column(Text)
+    summary: Mapped[dict] = mapped_column(JSONB, default=dict)
+    rejected: Mapped[list] = mapped_column(JSONB, default=list)
+
+
+class AAFiTxn(Base):
+    """One transaction from a consented statement, normalised from ReBIT DEPOSIT (masked account only)."""
+
+    __tablename__ = "aa_fi_txn"
+    id: Mapped[str] = mapped_column(String(24), primary_key=True)
+    consent_id: Mapped[str] = mapped_column(ForeignKey("aa_consent.id", ondelete="CASCADE"), index=True)
+    customer_id: Mapped[str] = mapped_column(String(16), index=True)
+    fip_id: Mapped[str] = mapped_column(String(40))
+    masked_account: Mapped[str] = mapped_column(String(32))
+    txn_id: Mapped[str] = mapped_column(String(64))
+    txn_type: Mapped[str] = mapped_column(String(8))
+    mode: Mapped[str] = mapped_column(String(8))
+    amount_paise: Mapped[int] = mapped_column(BigInteger)
+    balance_paise: Mapped[int | None] = mapped_column(BigInteger)
+    occurred_at: Mapped[datetime] = mapped_column(TS)
+    value_date: Mapped[date | None] = mapped_column(Date)
+    narration: Mapped[str] = mapped_column(String(200))
+    reference: Mapped[str] = mapped_column(String(200))
+    data_source: Mapped[str] = mapped_column(String(16))
+    content_sha256: Mapped[str] = mapped_column(String(64))
+    fetched_at: Mapped[datetime] = mapped_column(TS)
+
+
+class CouncilRun(Base):
+    """One Investigation Council run: which engine and model argued, at what cost, over how much of the evidence.
+
+    `case_sha256` is the alert's case snapshot when the council ran (app.brief.revisions.content_sha); a later
+    revision of the case makes the run stale. `trace` holds every agent call the harness made.
+    """
+
+    __tablename__ = "council_run"
+    id: Mapped[str] = mapped_column(String(24), primary_key=True)
+    alert_id: Mapped[str] = mapped_column(String(24), index=True)
+    alert_key: Mapped[str | None] = mapped_column(String(64))
+    case_sha256: Mapped[str | None] = mapped_column(String(64))
+    requested_engine: Mapped[str] = mapped_column(String(16))
+    engine: Mapped[str | None] = mapped_column(String(16))
+    model: Mapped[str | None] = mapped_column(String(64))
+    prompt_version: Mapped[str | None] = mapped_column(String(32))
+    status: Mapped[str] = mapped_column(String(12))  # RUNNING | COMPLETE | PARTIAL | FALLBACK | FAILED
+    actor: Mapped[str] = mapped_column(String(32))
+    started_at: Mapped[datetime] = mapped_column(TS)
+    finished_at: Mapped[datetime | None] = mapped_column(TS)
+    usage: Mapped[dict] = mapped_column(JSONB, default=dict)
+    coverage: Mapped[dict] = mapped_column(JSONB, default=dict)
+    trace: Mapped[dict] = mapped_column(JSONB, default=dict)
+    result: Mapped[dict | None] = mapped_column(JSONB)
+    error: Mapped[str | None] = mapped_column(Text)
+
+
+class CaseRevision(Base):
+    """An append-only revision of an alert's case state, written whenever detection changes it.
+
+    `alert_key` is the alert's natural identity (chain kind + root event) — stable whatever order events
+    arrived in. `snapshot` is the case state; `changes` says what moved since the previous revision and
+    why. Rows are never updated: the earlier state is always recoverable (app.brief.revisions).
+    """
+
+    __tablename__ = "case_revision"
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    alert_key: Mapped[str] = mapped_column(String(64))
+    alert_id: Mapped[str] = mapped_column(String(24), index=True)
+    rev: Mapped[int] = mapped_column(Integer)
+    run_id: Mapped[str] = mapped_column(String(32), index=True)
+    created_at: Mapped[datetime] = mapped_column(TS)
+    status: Mapped[str] = mapped_column(String(12))  # OPENED | REVISED | WITHDRAWN
+    snapshot: Mapped[dict] = mapped_column(JSONB)
+    snapshot_sha256: Mapped[str] = mapped_column(String(64))
+    changes: Mapped[list] = mapped_column(JSONB)
+    trigger: Mapped[dict] = mapped_column(JSONB)
+    summary: Mapped[str] = mapped_column(Text)
