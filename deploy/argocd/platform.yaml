@@ -1,0 +1,31 @@
+# Cluster add-ons SUTRA relies on, installed by Argo CD from their upstream charts (app-of-apps).
+# Versions are pinned; Renovate/Dependabot raise PRs to move them.
+# Karpenter's chart is OCI: register public.ecr.aws as an OCI Helm repository in Argo CD (enableOCI: true).
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: platform
+  namespace: argocd
+spec:
+  goTemplate: true
+  generators:
+    - list:
+        elements:
+          - { name: aws-load-balancer-controller, ns: kube-system, repo: https://aws.github.io/eks-charts, chart: aws-load-balancer-controller, version: 1.9.2 }
+          - { name: external-secrets, ns: external-secrets, repo: https://charts.external-secrets.io, chart: external-secrets, version: 0.10.4 }
+          - { name: kyverno, ns: kyverno, repo: https://kyverno.github.io/kyverno, chart: kyverno, version: 3.2.7 }
+          - { name: argo-rollouts, ns: argo-rollouts, repo: https://argoproj.github.io/argo-helm, chart: argo-rollouts, version: 2.37.7 }
+          - { name: karpenter, ns: kube-system, repo: public.ecr.aws/karpenter, chart: karpenter, version: 1.0.6 }
+  template:
+    metadata:
+      name: '{{.name}}'
+    spec:
+      project: default
+      source:
+        repoURL: '{{.repo}}'
+        chart: '{{.chart}}'
+        targetRevision: '{{.version}}'
+      destination: { server: https://kubernetes.default.svc, namespace: '{{.ns}}' }
+      syncPolicy:
+        automated: { prune: true, selfHeal: true }
+        syncOptions: [CreateNamespace=true, ServerSideApply=true]

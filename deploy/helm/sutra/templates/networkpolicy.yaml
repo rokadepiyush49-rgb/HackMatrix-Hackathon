@@ -1,0 +1,79 @@
+{{- if .Values.networkPolicy.enabled }}
+{{- $api := dict "root" . "component" "api" }}
+{{- $web := dict "root" . "component" "web" }}
+# Zero trust inside the namespace: deny everything, then allow only the paths SUTRA needs.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "sutra.fullname" . }}-default-deny
+  labels: {{- include "sutra.labels" . | nindent 4 }}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+# Everyone may resolve DNS.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "sutra.fullname" . }}-dns
+  labels: {{- include "sutra.labels" . | nindent 4 }}
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to: [{ namespaceSelector: {}, podSelector: { matchLabels: { k8s-app: kube-dns } } }]
+      ports: [{ port: 53, protocol: UDP }, { port: 53, protocol: TCP }]
+---
+# web: reachable from the ALB (VPC); may call only the API.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "sutra.fullname" . }}-web
+  labels: {{- include "sutra.labels" . | nindent 4 }}
+spec:
+  podSelector: { matchLabels: {{ include "sutra.selectorJson" $web }} }
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from: [{ ipBlock: { cidr: {{ .Values.networkPolicy.vpcCidr }} } }]
+      ports: [{ port: {{ .Values.web.port }} }]
+  egress:
+    - to: [{ podSelector: { matchLabels: {{ include "sutra.selectorJson" $api }} } }]
+      ports: [{ port: {{ .Values.api.port }} }]
+    - to: [{ ipBlock: { cidr: {{ .Values.networkPolicy.vpcCidr }} } }]   # OTel collector
+      ports: [{ port: 4318 }]
+---
+# api: reachable from web only; may reach Postgres, Valkey, and AWS APIs (S3, Secrets Manager, Bedrock).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "sutra.fullname" . }}-api
+  labels: {{- include "sutra.labels" . | nindent 4 }}
+spec:
+  podSelector: { matchLabels: {{ include "sutra.selectorJson" $api }} }
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from: [{ podSelector: { matchLabels: {{ include "sutra.selectorJson" $web }} } }]
+      ports: [{ port: {{ .Values.api.port }} }]
+    - from: [{ ipBlock: { cidr: {{ .Values.networkPolicy.vpcCidr }} } }]   # kubelet / ALB health checks
+      ports: [{ port: {{ .Values.api.port }} }]
+  egress:
+    - to: [{ ipBlock: { cidr: {{ .Values.networkPolicy.vpcCidr }} } }]
+      ports: [{ port: 5432 }, { port: 6379 }, { port: 443 }, { port: 4318 }]
+    - to: [{ ipBlock: { cidr: 0.0.0.0/0, except: [{{ .Values.networkPolicy.vpcCidr }}] } }]
+      ports: [{ port: 443 }]   # AWS public endpoints and the Anthropic API, via NAT
+---
+# jobs: no ingress at all; same data-store egress as the API.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "sutra.fullname" . }}-jobs
+  labels: {{- include "sutra.labels" . | nindent 4 }}
+spec:
+  podSelector: { matchExpressions: [{ key: app.kubernetes.io/component, operator: In, values: [jobs, migrate, detect] }] }
+  policyTypes: [Ingress, Egress]
+  egress:
+    - to: [{ ipBlock: { cidr: {{ .Values.networkPolicy.vpcCidr }} } }]
+      ports: [{ port: 5432 }, { port: 443 }, { port: 4318 }]
+    - to: [{ ipBlock: { cidr: 0.0.0.0/0, except: [{{ .Values.networkPolicy.vpcCidr }}] } }]
+      ports: [{ port: 443 }]
+{{- end }}

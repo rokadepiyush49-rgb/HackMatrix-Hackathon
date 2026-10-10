@@ -1,0 +1,21 @@
+name: Bug report
+description: Something behaves differently from what it should
+labels: [bug, triage]
+body:
+  - type: textarea
+    id: what
+    attributes: { label: What happened, description: "Include the X-Request-ID from the response header if you have it." }
+    validations: { required: true }
+  - type: textarea
+    id: expected
+    attributes: { label: What you expected }
+    validations: { required: true }
+  - type: textarea
+    id: steps
+    attributes: { label: Steps to reproduce, placeholder: "1. Open /cases/AL-0921-001\n2. …" }
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [Detection (Needle/Alibi/Brief), Council, Investigator app, API, Infrastructure, Docs]
+    validations: { required: true }

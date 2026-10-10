@@ -1,0 +1,116 @@
+# Build once, sign, attest, and promote by digest.
+#   main  → images pushed to ECR (staging) → PR pins the new digests in values-staging.yaml → Argo CD syncs
+#   tag v* → same digests promoted to prod via a PR on values-prod.yaml (a human approves the sync)
+name: Release
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build, sign, attest (${{ matrix.component }})
+    runs-on: ubuntu-latest
+    environment: staging
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write       # OIDC: AWS role assumption and Sigstore keyless signing — no stored secrets
+      attestations: write   # SLSA build provenance
+      packages: read
+    strategy:
+      matrix: { component: [api, web] }
+    outputs:
+      digest-api: ${{ steps.out.outputs.digest-api }}
+      digest-web: ${{ steps.out.outputs.digest-web }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_RELEASE_ROLE_ARN }}
+          aws-region: ap-south-1
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.ecr.outputs.registry }}/sutra-${{ matrix.component }}-staging
+          tags: |
+            type=sha,format=long
+            type=semver,pattern={{version}}
+      - id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/${{ matrix.component }}.Dockerfile
+          platforms: linux/amd64,linux/arm64       # Graviton nodes in EKS, x86 laptops for dev
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ github.ref_name }}
+            REVISION=${{ github.sha }}
+          provenance: mode=max
+          sbom: true                               # BuildKit SBOM attached to the image index
+          cache-from: type=gha,scope=${{ matrix.component }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.component }}
+      - name: SBOM (SPDX) for the release record
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ steps.ecr.outputs.registry }}/sutra-${{ matrix.component }}-staging@${{ steps.build.outputs.digest }}
+          format: spdx-json
+          output-file: sbom-${{ matrix.component }}.spdx.json
+      - name: Gate on vulnerabilities in what was actually pushed
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ steps.ecr.outputs.registry }}/sutra-${{ matrix.component }}-staging@${{ steps.build.outputs.digest }}
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+      - uses: sigstore/cosign-installer@v3
+      - name: Sign (Sigstore keyless — identity is this workflow, verified by Kyverno at admission)
+        run: cosign sign --yes ${{ steps.ecr.outputs.registry }}/sutra-${{ matrix.component }}-staging@${{ steps.build.outputs.digest }}
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ${{ steps.ecr.outputs.registry }}/sutra-${{ matrix.component }}-staging
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ matrix.component }}
+          path: sbom-${{ matrix.component }}.spdx.json
+      - id: out
+        run: echo "digest-${{ matrix.component }}=${{ steps.build.outputs.digest }}" >> "$GITHUB_OUTPUT"
+
+  promote:
+    name: Pin digests for GitOps (${{ startsWith(github.ref, 'refs/tags/') && 'prod' || 'staging' }})
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      TARGET: ${{ startsWith(github.ref, 'refs/tags/') && 'prod' || 'staging' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mikefarah/yq@v4
+        with:
+          cmd: >-
+            yq -i '.image.api.digest = "${{ needs.build.outputs.digest-api }}" |
+                   .image.web.digest = "${{ needs.build.outputs.digest-web }}"'
+            deploy/helm/sutra/values-${{ env.TARGET }}.yaml
+      - uses: peter-evans/create-pull-request@v7
+        with:
+          branch: release/${{ env.TARGET }}-${{ github.sha }}
+          title: "release(${{ env.TARGET }}): ${{ github.ref_name }} @ ${{ github.sha }}"
+          commit-message: "release(${{ env.TARGET }}): pin image digests for ${{ github.sha }}"
+          body: |
+            Pins signed, SBOM-attested images built from ${{ github.sha }}.
+            Merging this PR is the deployment: Argo CD reconciles `deploy/helm/sutra` with these digests.
+          labels: release, ${{ env.TARGET }}

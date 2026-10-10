@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "sutra.fullname" . }}-config
+  labels: {{- include "sutra.labels" . | nindent 4 }}
+data:
+  SUTRA_ENV: {{ .Values.global.env | quote }}
+  SUTRA_LOG_LEVEL: {{ .Values.config.logLevel | quote }}
+  SUTRA_LOG_JSON: "true"
+  SUTRA_DEMO_MODE: {{ .Values.web.demoMode | quote }}
+  SUTRA_STORAGE_BACKEND: {{ .Values.config.storageBackend | quote }}
+  SUTRA_STORAGE_DIR: /tmp/packs
+  SUTRA_S3_BUCKET: {{ .Values.config.s3Bucket | quote }}
+  SUTRA_S3_KMS_KEY_ID: {{ .Values.config.s3KmsKeyId | quote }}
+  SUTRA_EVIDENCE_RETENTION_DAYS: {{ .Values.config.evidenceRetentionDays | quote }}
+  SUTRA_EVIDENCE_LOCK_MODE: {{ .Values.config.evidenceLockMode | quote }}
+  SUTRA_AWS_REGION: {{ .Values.config.awsRegion | quote }}
+  AWS_REGION: {{ .Values.config.awsRegion | quote }}
+  SUTRA_LLM_ENABLED: {{ .Values.config.llmEnabled | quote }}
+  SUTRA_LLM_PROVIDER: {{ .Values.config.llmProvider | quote }}
+  SUTRA_LLM_MODEL: {{ .Values.config.llmModel | quote }}
+  SUTRA_LLM_BEDROCK_MODEL: {{ .Values.config.llmBedrockModel | quote }}
+  SUTRA_LLM_EFFORT: {{ .Values.config.llmEffort | quote }}
+  SUTRA_CORS_ORIGINS: {{ printf "[\"https://%s\"]" .Values.ingress.host | quote }}
+  {{- with .Values.config.otelEndpoint }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ . | quote }}
+  {{- end }}

@@ -1,0 +1,41 @@
+{{- range $name := list "api" "web" }}
+{{- $v := index $.Values $name }}
+{{- $c := dict "root" $ "component" $name }}
+{{- if $v.autoscaling.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "sutra.fullname" $ }}-{{ $name }}
+  labels: {{- include "sutra.labels" $ | nindent 4 }}
+spec:
+  scaleTargetRef:
+    {{- if and (eq $name "api") $.Values.api.rollout.enabled }}
+    apiVersion: argoproj.io/v1alpha1
+    kind: Rollout
+    {{- else }}
+    apiVersion: apps/v1
+    kind: Deployment
+    {{- end }}
+    name: {{ include "sutra.fullname" $ }}-{{ $name }}
+  minReplicas: {{ $v.autoscaling.minReplicas }}
+  maxReplicas: {{ $v.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: {{ $v.autoscaling.targetCPU }} } }
+  behavior:
+    # Scale up fast for an alert storm, down slowly so a burst doesn't flap capacity.
+    scaleUp: { stabilizationWindowSeconds: 0, policies: [{ type: Percent, value: 100, periodSeconds: 30 }] }
+    scaleDown: { stabilizationWindowSeconds: 300, policies: [{ type: Pods, value: 1, periodSeconds: 60 }] }
+{{- end }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "sutra.fullname" $ }}-{{ $name }}
+  labels: {{- include "sutra.labels" $ | nindent 4 }}
+spec:
+  minAvailable: {{ $v.pdb.minAvailable }}
+  selector:
+    matchLabels: {{- include "sutra.selector" $c | nindent 6 }}
+{{- end }}

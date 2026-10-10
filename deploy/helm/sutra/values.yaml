@@ -1,0 +1,101 @@
+# Defaults are safe for a single small cluster. Environments override in values-<env>.yaml.
+# Every value here has a reason; the reason is written next to it.
+
+global:
+  env: dev                      # dev | staging | prod → SUTRA_ENV (prod refuses unsafe config at startup)
+  imageRegistry: ""             # e.g. 123456789012.dkr.ecr.ap-south-1.amazonaws.com
+  imagePullPolicy: IfNotPresent
+
+image:
+  api: { repository: sutra-api, tag: "", digest: "" }   # tag defaults to .Chart.AppVersion; digest wins when set
+  web: { repository: sutra-web, tag: "", digest: "" }
+
+# ── API ─────────────────────────────────────────────────────────────────────
+api:
+  replicas: 2                   # ≥2 so a node drain or AZ loss never takes the API down
+  port: 8000
+  resources:                    # requests sized from pandas/LightGBM working set on the demo world
+    requests: { cpu: 250m, memory: 768Mi }
+    limits: { memory: 1536Mi }  # no CPU limit: throttling hurts p99 more than it protects neighbours
+  autoscaling: { enabled: true, minReplicas: 2, maxReplicas: 8, targetCPU: 65 }
+  pdb: { minAvailable: 1 }
+  statementTimeoutMs: 15000     # a runaway query must not hold a pool connection forever
+  rollout:
+    enabled: false              # true → Argo Rollouts canary instead of a Deployment
+    steps:
+      - setWeight: 10
+      - pause: { duration: 5m }
+      - setWeight: 50
+      - pause: { duration: 10m }
+
+# ── Web (Next.js BFF) ───────────────────────────────────────────────────────
+web:
+  replicas: 2
+  port: 3000
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 512Mi }
+  autoscaling: { enabled: true, minReplicas: 2, maxReplicas: 6, targetCPU: 70 }
+  pdb: { minAvailable: 1 }
+  demoMode: false
+
+# ── Batch jobs (same image as the API) ──────────────────────────────────────
+migrations:
+  enabled: true                 # Helm pre-install/pre-upgrade hook: schema first, then new pods
+detection:
+  enabled: true
+  schedule: "*/15 * * * *"      # near-real-time sweep; idempotent, so overlap is forbidden not harmful
+  resources:
+    requests: { cpu: "1", memory: 3Gi }
+    limits: { memory: 6Gi }
+  activeDeadlineSeconds: 1800
+
+# ── Configuration (non-secret) ──────────────────────────────────────────────
+config:
+  logLevel: INFO
+  storageBackend: s3
+  s3Bucket: ""                  # evidence bucket with Object Lock (Terraform output)
+  s3KmsKeyId: ""
+  evidenceRetentionDays: 1825   # PMLA: five years
+  evidenceLockMode: COMPLIANCE  # staging uses GOVERNANCE so test buckets can be cleaned up
+  awsRegion: ap-south-1
+  # LLM narration (Ask SUTRA, STR wording). The deterministic engine answers whenever this is off.
+  llmEnabled: false              # off by default: see ADR 015 (India residency of LLM inference)
+  llmProvider: bedrock           # IAM via Pod Identity — no API key in the cluster
+  llmModel: claude-opus-5-5      # first-party model ID (provider anthropic)
+  llmBedrockModel: anthropic.claude-opus-5-5
+  llmEffort: medium
+  otelEndpoint: ""              # e.g. http://adot-collector.observability:4318
+
+# ── Secrets: pulled from AWS Secrets Manager by External Secrets Operator ──
+externalSecrets:
+  enabled: true
+  secretStore: aws-secrets-manager   # ClusterSecretStore name
+  refreshInterval: 1h
+  remoteKey: sutra/app               # JSON secret: database_url, jwt_secret, pii_hmac_key, rate_limit_storage_uri, anthropic_api_key
+existingSecret: ""                   # use a pre-made Secret instead (local clusters)
+
+# ── Networking ──────────────────────────────────────────────────────────────
+ingress:
+  enabled: true
+  className: alb
+  host: sutra.example.in
+  certificateArn: ""
+  wafAclArn: ""
+  annotations: {}
+networkPolicy:
+  enabled: true
+  # Egress from API/jobs to data stores (RDS, ElastiCache) and AWS endpoints inside the VPC.
+  vpcCidr: 10.40.0.0/16
+
+serviceAccounts:
+  # Permissions come from EKS Pod Identity associations created in Terraform, keyed by these names.
+  api: sutra-api
+  web: sutra-web
+  jobs: sutra-jobs
+
+podSecurity:
+  runAsUser: 10001
+  fsGroup: 10001
+
+topologySpread: true            # spread replicas across AZs, then nodes

@@ -1,0 +1,145 @@
+# Every pull request and every push to main must pass all of this before it can merge.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend · lint, tests, scenario twins
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env: { POSTGRES_DB: sutra, POSTGRES_USER: sutra, POSTGRES_PASSWORD: ci }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U sutra" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      SUTRA_ENV: test
+      SUTRA_DATABASE_URL: postgresql+psycopg://sutra:ci@localhost:5432/sutra
+      SUTRA_JWT_SECRET: ci-only-not-a-secret-ci-only-not-a-secret
+      SUTRA_PII_HMAC_KEY: ci-only-not-a-secret-ci-only-not-a-secret
+      PYTHONPATH: ${{ github.workspace }}/backend:${{ github.workspace }}/data/kestrel_sim
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with: { enable-cache: true, python-version: "3.12" }
+      - run: uv sync --frozen --all-groups --all-extras   # incl. boto3 + OpenTelemetry, so cloud paths are tested
+      - name: Lint (ruff)
+        run: uv run ruff check backend data
+      - name: Migrate, seed, train, detect (the real demo pipeline)
+        run: |
+          (cd backend && uv run alembic upgrade head)
+          uv run python -m app.cli demo
+      - name: Tests (54+ incl. scenario twins and API rules)
+        run: uv run pytest --cov=app --cov-report=xml --junitxml=pytest.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-test-results
+          path: |
+            pytest.xml
+            coverage.xml
+
+  frontend:
+    name: Frontend · lint, typecheck, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults: { run: { working-directory: frontend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci --no-audit --no-fund
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+        env: { NEXT_TELEMETRY_DISABLED: "1" }
+
+  kubernetes:
+    name: Helm chart · lint and schema-validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - name: Lint
+        run: helm lint deploy/helm/sutra -f deploy/helm/sutra/values-prod.yaml
+      - name: Render every environment and validate against Kubernetes + CRD schemas
+        run: |
+          curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz | tar xz
+          for env in staging prod; do
+            helm template sutra deploy/helm/sutra -f deploy/helm/sutra/values.yaml -f deploy/helm/sutra/values-$env.yaml \
+              | ./kubeconform -strict -summary -kubernetes-version 1.31.0 \
+                  -schema-location default \
+                  -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
+          done
+
+  terraform:
+    name: Terraform · fmt, validate, tflint, checkov
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with: { terraform_version: 1.10.5 }
+      - run: terraform fmt -check -recursive infra/terraform
+      - name: Validate each root (no backend, no credentials)
+        run: |
+          for dir in infra/terraform/bootstrap infra/terraform/envs/staging infra/terraform/envs/prod; do
+            terraform -chdir=$dir init -backend=false -input=false && terraform -chdir=$dir validate
+          done
+      - uses: terraform-linters/setup-tflint@v4
+      - run: tflint --init --config "$GITHUB_WORKSPACE/infra/terraform/.tflint.hcl" && tflint --recursive --config "$GITHUB_WORKSPACE/infra/terraform/.tflint.hcl" --chdir infra/terraform
+      - name: Policy-as-code (Checkov)
+        uses: bridgecrewio/checkov-action@v12
+        with: { directory: infra/terraform, framework: terraform, quiet: true, soft_fail: false }
+
+  images:
+    name: Container images · build and scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      matrix: { component: [api, web] }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: docker/${{ matrix.component }}.Dockerfile
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/${{ matrix.component }}.Dockerfile
+          load: true
+          tags: sutra-${{ matrix.component }}:ci
+          cache-from: type=gha,scope=${{ matrix.component }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.component }}
+      - name: Vulnerability scan (fail on fixable HIGH/CRITICAL)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: sutra-${{ matrix.component }}:ci
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

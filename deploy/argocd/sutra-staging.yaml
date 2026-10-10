@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sutra-staging
+  namespace: argocd
+  finalizers: [resources-finalizer.argocd.argoproj.io]
+spec:
+  project: sutra
+  source:
+    repoURL: https://github.com/rokadepiyush49-rgb/HackMatrix-Hackathon.git
+    targetRevision: main
+    path: deploy/helm/sutra
+    helm:
+      valueFiles: [values.yaml, values-staging.yaml]
+      # The release workflow pins image digests here (deploy/helm/sutra/values-staging.yaml) via a PR.
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sutra-staging
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [CreateNamespace=true, ServerSideApply=true, PruneLast=true]
+    managedNamespaceMetadata:
+      labels:
+        # Kubernetes Pod Security Admission: reject any pod that isn't non-root, capability-free, seccomp'd.
+        pod-security.kubernetes.io/enforce: restricted
+        pod-security.kubernetes.io/audit: restricted
+        sutra.io/env: staging
+    retry:
+      limit: 3
+      backoff: { duration: 10s, factor: 2, maxDuration: 3m }

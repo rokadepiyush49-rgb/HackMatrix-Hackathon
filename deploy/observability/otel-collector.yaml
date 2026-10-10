@@ -1,0 +1,30 @@
+# Local collector for docker compose. In AWS the ADOT collector (EKS add-on) plays this role and
+# exports to X-Ray / Amazon Managed Prometheus instead of Jaeger.
+receivers:
+  otlp:
+    protocols:
+      http: { endpoint: 0.0.0.0:4318 }
+      grpc: { endpoint: 0.0.0.0:4317 }
+
+processors:
+  memory_limiter: { check_interval: 1s, limit_mib: 256 }
+  batch: {}
+  # Never let PII leave the process boundary in telemetry: drop query-string values and auth headers.
+  attributes/scrub:
+    actions:
+      - { key: http.request.header.authorization, action: delete }
+      - { key: http.request.header.cookie, action: delete }
+      - { key: url.query, action: delete }
+
+exporters:
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls: { insecure: true }
+  debug: { verbosity: basic }
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, attributes/scrub, batch]
+      exporters: [otlp/jaeger]

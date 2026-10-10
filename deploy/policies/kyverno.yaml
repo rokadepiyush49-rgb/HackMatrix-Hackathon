@@ -1,0 +1,65 @@
+# Admission control: the cluster refuses workloads that break SUTRA's supply-chain and runtime rules,
+# whoever submits them. These complement Pod Security Admission (restricted) on the namespaces.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: sutra-verify-image-signatures
+  annotations:
+    policies.kyverno.io/description: >-
+      Only images signed by this repository's GitHub Actions release workflow (Sigstore keyless,
+      OIDC identity) may run in SUTRA namespaces. A pushed-but-unsigned or third-party image is rejected.
+spec:
+  validationFailureAction: Enforce
+  webhookTimeoutSeconds: 15
+  rules:
+    - name: verify-cosign-keyless
+      match:
+        any: [{ resources: { kinds: [Pod], namespaces: [sutra-staging, sutra-prod] } }]
+      verifyImages:
+        - imageReferences: ["*.dkr.ecr.ap-south-1.amazonaws.com/sutra-*"]
+          mutateDigest: true          # rewrite tags to digests so what was verified is what runs
+          verifyDigest: true
+          attestors:
+            - entries:
+                - keyless:
+                    issuer: https://token.actions.githubusercontent.com
+                    subject: "https://github.com/rokadepiyush49-rgb/HackMatrix-Hackathon/.github/workflows/release.yml@refs/heads/main"
+                    rekor: { url: https://rekor.sigstore.dev }
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: sutra-workload-baseline
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: require-resource-requests-and-memory-limits
+      match:
+        any: [{ resources: { kinds: [Pod], namespaces: [sutra-staging, sutra-prod] } }]
+      validate:
+        message: "Every container needs CPU/memory requests and a memory limit (noisy-neighbour and OOM safety)."
+        pattern:
+          spec:
+            containers:
+              - resources:
+                  requests: { memory: "?*", cpu: "?*" }
+                  limits: { memory: "?*" }
+    - name: disallow-latest-tag
+      match:
+        any: [{ resources: { kinds: [Pod], namespaces: [sutra-staging, sutra-prod] } }]
+      validate:
+        message: "Images must be pinned by tag or digest, never :latest."
+        pattern:
+          spec:
+            containers:
+              - image: "!*:latest"
+    - name: require-read-only-root
+      match:
+        any: [{ resources: { kinds: [Pod], namespaces: [sutra-staging, sutra-prod] } }]
+      validate:
+        message: "Containers must run with a read-only root filesystem."
+        pattern:
+          spec:
+            containers:
+              - securityContext: { readOnlyRootFilesystem: true }

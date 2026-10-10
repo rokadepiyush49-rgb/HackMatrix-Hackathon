@@ -1,0 +1,23 @@
+# GitOps: the cluster pulls its desired state from this repository. Nobody runs `kubectl apply` or
+# `helm upgrade` against staging/prod by hand — a merged PR is the only way to change what runs.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: sutra
+  namespace: argocd
+spec:
+  description: SUTRA application environments
+  sourceRepos:
+    - https://github.com/rokadepiyush49-rgb/HackMatrix-Hackathon.git
+  destinations:
+    - { server: https://kubernetes.default.svc, namespace: sutra-staging }
+    - { server: https://kubernetes.default.svc, namespace: sutra-prod }
+  clusterResourceWhitelist: []          # the app may not create cluster-scoped objects
+  namespaceResourceBlacklist:
+    - { group: "", kind: ResourceQuota }
+    - { group: "", kind: LimitRange }
+  roles:
+    - name: release-managers
+      description: may sync prod (staging syncs automatically)
+      policies:
+        - p, proj:sutra:release-managers, applications, sync, sutra/sutra-prod, allow

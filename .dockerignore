@@ -1,0 +1,23 @@
+# Keep the build context small and secret-free. Images are built from source + lockfiles only.
+.git
+.github
+.claude
+**/.env
+**/.env.*
+!.env.example
+**/node_modules
+**/.next
+**/__pycache__
+**/*.py[cod]
+**/.pytest_cache
+**/.ruff_cache
+**/.mypy_cache
+.venv
+var
+ml
+docs
+deploy
+infra
+tests/e2e
+**/*.zip
+**/.DS_Store
