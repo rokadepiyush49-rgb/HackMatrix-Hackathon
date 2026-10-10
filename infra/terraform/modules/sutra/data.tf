@@ -17,7 +17,7 @@ resource "aws_security_group" "db" {
 
 module "db" {
   source  = "terraform-aws-modules/rds/aws"
-  version = "~> 6.10"
+  version = "~> 7.2"
 
   identifier           = local.name
   engine               = "postgres"
