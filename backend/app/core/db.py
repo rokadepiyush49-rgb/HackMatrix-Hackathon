@@ -21,7 +21,18 @@ class Base(DeclarativeBase):
     metadata = MetaData(naming_convention=NAMING)
 
 
-engine = create_engine(get_settings().database_url, pool_pre_ping=True, future=True)
+def _engine():
+    s = get_settings()
+    connect_args = {"application_name": f"sutra-{s.env}"}
+    if s.db_statement_timeout_ms:
+        connect_args["options"] = f"-c statement_timeout={s.db_statement_timeout_ms}"
+    # pre_ping survives RDS failovers and idle-connection reaping by RDS Proxy; recycle keeps
+    # connections younger than typical proxy/NAT idle timeouts.
+    return create_engine(s.database_url, pool_pre_ping=True, pool_size=s.db_pool_size,
+                         max_overflow=s.db_max_overflow, pool_recycle=1800, connect_args=connect_args)
+
+
+engine = _engine()
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
 
