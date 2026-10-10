@@ -1,0 +1,26 @@
+sequenceDiagram
+    autonumber
+    actor An as Investigator (L2)
+    participant UI as Next.js app
+    participant API as FastAPI
+    participant DB as Loom (Postgres)
+    participant Eng as Needle + Alibi + Brief
+    participant Co as Council / Ask SUTRA
+    actor Vig as Vigilance (second reviewer)
+    Note over Eng,DB: make detect (batch pipeline)
+    Eng->>DB: read events
+    Eng->>DB: persist chains, signals, Briefs, alerts
+    An->>UI: open P1 alert
+    UI->>API: GET /cases/{id} (JWT in httpOnly cookie)
+    API->>DB: chain, evidence, alibi verdicts
+    API-->>UI: Brief (prosecution, defence, missing evidence)
+    An->>UI: Ask SUTRA / run Council
+    UI->>API: question
+    API->>Co: evidence-only context
+    Co-->>API: answer with evidence codes
+    Note over API: cite-or-drop verifier removes unsupported sentences
+    API-->>UI: grounded answer
+    An->>API: propose decision
+    Vig->>API: approve (four-eyes enforced server-side)
+    API->>DB: decision + hash-chained audit entry
+    API-->>UI: evidence pack PDF (SHA-256 manifest)

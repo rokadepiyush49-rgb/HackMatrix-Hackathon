@@ -1,0 +1,12 @@
+flowchart LR
+    EV[("Evidence IDs<br/>from Loom")] --> DET["Deterministic engine<br/>detect · chain · score · prioritise"]
+    DET --> ALERT["Alert + Brief"]
+    EV --> LLM["LLM (optional)<br/>writes language only"]
+    ALERT --> LLM
+    LLM --> VER{"Verifier<br/>numbers & dates found<br/>in cited evidence?"}
+    VER -- yes --> OUT["Grounded narrative"]
+    VER -- no --> DROP["Sentence dropped"]
+    LLM -. "no API key" .-> TPL["Deterministic templates<br/>same structure, works offline"]
+    TPL --> OUT
+    classDef b fill:#fff,stroke:#A31212,color:#222;
+    class EV,DET,ALERT,LLM,VER,OUT,DROP,TPL b

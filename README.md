@@ -15,6 +15,13 @@ and argue every alert both ways: **with evidence, never a score.**
 ![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?logo=tailwindcss&logoColor=white)
 ![Data: synthetic](https://img.shields.io/badge/data-100%25_synthetic-f0a0f2)
 
+[![CI](https://github.com/rokadepiyush49-rgb/HackMatrix-Hackathon/actions/workflows/ci.yml/badge.svg)](https://github.com/rokadepiyush49-rgb/HackMatrix-Hackathon/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/rokadepiyush49-rgb/HackMatrix-Hackathon/actions/workflows/codeql.yml/badge.svg)](https://github.com/rokadepiyush49-rgb/HackMatrix-Hackathon/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/rokadepiyush49-rgb/HackMatrix-Hackathon/badge)](https://scorecard.dev/viewer/?uri=github.com/rokadepiyush49-rgb/HackMatrix-Hackathon)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-EKS-326CE5?logo=kubernetes&logoColor=white)
+![Terraform](https://img.shields.io/badge/IaC-Terraform-7B42BC?logo=terraform&logoColor=white)
+![License](https://img.shields.io/badge/license-Apache--2.0-blue)
+
 ![SUTRA Command Center](docs/screenshots/command-center.png)
 
 </div>
@@ -37,6 +44,8 @@ and argue every alert both ways: **with evidence, never a score.**
 - [Models](#models)
 - [Responsible AI, privacy and security](#responsible-ai-privacy-and-security)
 - [Tech stack](#tech-stack)
+- [Production platform](#production-platform)
+- [Live demo: raw events to a P1](#live-demo-raw-events-to-a-p1)
 - [Getting started](#getting-started)
 - [Repository layout](#repository-layout)
 - [Architecture decisions](#architecture-decisions)
@@ -184,8 +193,11 @@ Both models are glass-box and train on the independent seed-7 world
 
 | Model | Algorithm | Explanations | Out-of-fold metrics (synthetic) |
 |---|---|---|---|
-| **M5** chain classifier | Standardised logistic regression + Platt calibration | Exact per-feature contributions (coef × standardised value) | ROC-AUC 0.932 · PR-AUC 0.921 (11 positive / 95 negative chains) |
-| **M6** mule-likeness | LightGBM (200 trees, 15 leaves) | Native TreeSHAP per prediction | ROC-AUC 1.00 (39 positive / 4,502 negative accounts) |
+| **M5** chain classifier | Standardised logistic regression + Platt calibration | Exact per-feature contributions (coef × standardised value) | ROC-AUC 1.00 (17 positive / 105 negative chains) — synthetic chains separate easily, so M5 may only move a chain between watch-list and queue |
+| **M6** mule-likeness | LightGBM (200 trees, 15 leaves) | Native TreeSHAP per prediction | ROC-AUC 0.987 · PR-AUC 0.964 · precision@k 0.90 (81 positive / 4,673 negative accounts, incl. Video-KYC, single-officer and shared-device look-alikes) |
+
+A CI quality gate (`backend/tests/test_models.py`) fails the build if metrics drop, if explanations stop
+adding up exactly, or if M6 starts leaning on a single feature (> 80% of its TreeSHAP weight).
 
 > [!IMPORTANT]
 > These metrics come from synthetic data. They say nothing about accuracy on real bank data.
@@ -218,7 +230,63 @@ Both models are glass-box and train on the independent seed-7 world
 | **AI (optional)** | Anthropic SDK (Claude), behind a cite-or-drop verifier |
 | **Reports** | ReportLab (PDF evidence packs) |
 | **Frontend** | Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · TanStack Query · Radix UI · React Flow · Motion · Recharts · cmdk · Poppins |
-| **Tooling** | uv workspace · npm · Ruff · pytest · ESLint |
+| **Tooling** | uv workspace · npm · Ruff · pytest · ESLint · pre-commit |
+| **Containers** | Multi-stage Docker (non-root, read-only root) · distroless Node · multi-arch amd64/arm64 · docker compose |
+| **Kubernetes** | Amazon EKS · Helm · Argo CD (GitOps) · Argo Rollouts (canary) · Karpenter (Graviton) · External Secrets · Kyverno · NetworkPolicy (VPC CNI eBPF) |
+| **AWS** | Terraform · RDS PostgreSQL 17 Multi-AZ · ElastiCache Valkey · S3 Object Lock (WORM evidence) · KMS · WAF · Secrets Manager · Bedrock · ap-south-1 + ap-south-2 DR |
+| **Delivery & supply chain** | GitHub Actions · OIDC to AWS (no keys) · cosign keyless signing · SBOM (SPDX) · SLSA provenance · Trivy · CodeQL · Checkov · gitleaks · OpenSSF Scorecard |
+| **Observability** | OpenTelemetry (API + BFF) · JSON logs with request IDs · CloudWatch · X-Ray · Managed Prometheus |
+
+*Why each of these, and what we rejected:* [`docs/TECH_DECISIONS.md`](docs/TECH_DECISIONS.md).
+
+## Production platform
+
+SUTRA ships with the infrastructure to run it the way a bank would: in India, with no long-lived
+credentials, evidence that cannot be altered, and every production change made through Git.
+
+| Concern | How |
+|---|---|
+| **Data residency** | Mumbai (`ap-south-1`) primary, Hyderabad (`ap-south-2`) DR — RBI payment-data localisation ([ADR 011](docs/adr/011-region-and-residency.md)) |
+| **Evidence integrity** | Packs written once to S3 Object Lock in COMPLIANCE mode for 5 years (PMLA) + SHA-256 manifest ([ADR 012](docs/adr/012-evidence-object-lock.md)) |
+| **Releases** | Build once → sign → SBOM + provenance → promote the same digest by PR → Argo CD sync → canary ([ADR 010](docs/adr/010-gitops-argocd.md)) |
+| **Runtime hardening** | Non-root, read-only, capability-free pods; Pod Security `restricted`; default-deny network policies; only signed images admitted ([ADR 008](docs/adr/008-container-supply-chain.md)) |
+| **Identity** | GitHub OIDC for CI, EKS Pod Identity for pods, Secrets Manager via External Secrets ([ADR 014](docs/adr/014-identity-and-secrets.md)) |
+| **Safety rails** | The API refuses to start in staging/prod with default secrets, demo personas or non-WORM storage |
+| **Operations** | [Runbook](docs/operations/runbook.md) · [DR (RPO ≤ 5 min)](docs/operations/disaster-recovery.md) · [SLOs](docs/operations/slo.md) · [Cost](docs/operations/cost.md) · [Threat model](docs/security/threat-model.md) |
+
+Architecture diagrams (context, containers, AWS deployment, release flow): [`docs/architecture`](docs/architecture/README.md).
+
+## Live demo: raw events to a P1
+
+**Live Ops** (`/live`) shows the product working end to end with nothing pre-computed. The
+simulator holds back the evening of 22 Sep: 247 raw rows from 11 source systems (VPN, core banking,
+the UPI/IMPS/RTGS switches, the service desk, eKYC). Somewhere in that traffic is a second insider
+takeover and a legitimate pension camp that makes the same mobile-number changes.
+
+Press **Play** and three things happen:
+
+1. **Input.** Rows land in Loom one transaction at a time, as a change-data-capture feed would
+   deliver them. Balances move and master data changes as they arrive.
+2. **Processing.** The production pipeline runs unchanged over the full 90 days. Each stage is
+   shown with its real duration, about 23 s on a laptop.
+3. **Output.** The new P1 appears with its whole chain. It was the camp officer, not the insider,
+   whose accesses Alibi explained. Once the run is over you can reveal the simulator's ground truth:
+   17 of the attack's 24 rows are cited, and none of the 223 legitimate ones.
+
+**Your input** turns a judge into the insider: choose who logs in and when, what paperwork exists, which account, what changes and where the money goes. The choices become the rows the bank's systems would record, and SUTRA returns a P1, a P2 or "no alert" with the reason, the signals and Alibi's verdict. **Undo my input** removes them exactly.
+
+**Kestrel Bank** (`/bank`) is a working test bank to try SUTRA by hand: a staff core-banking console (sign in from the branch or over VPN, search customers, change mobile numbers and limits, raise tickets, capture eKYC) and customer NetBanking (sign in on a usual or a new phone, reset the password, add payees, send money). It enforces what a bank would — permissions, balances, transaction limits, payees — and records every action into Loom as it happens. In Live Ops → **Kestrel Bank**, press **Run detection now** and see what SUTRA makes of it. It also has a small REST API, ten one-click test scenarios and `make bank-check`, which runs them all through SUTRA and checks the outcomes ([`docs/mock-bank`](docs/mock-bank/README.md)).
+
+Alert IDs, human triage and open cases survive every re-run ([ADR 016](docs/adr/016-live-feed-demo.md)).
+**Reset demo** undoes the evening exactly.
+
+The **Investigation Council speaks**. Each agent has its own voice, and the debate advances as each
+speaker finishes. Live Ops announces a new P1 aloud. Both use the browser's own speech synthesis,
+so it works offline and no case text leaves the machine.
+
+The on-site walkthrough, with timings, talking points and fallbacks, is in
+[`docs/demo/DEMO_SCRIPT.md`](docs/demo/DEMO_SCRIPT.md). Rehearse from a terminal with
+`make live-play` and `make live-reset`.
 
 ## Getting started
 
@@ -228,7 +296,16 @@ Both models are glass-box and train on the independent seed-7 world
 - **Node.js 20+** and npm
 - **PostgreSQL**, running locally, with permission for your user to create a database
 
-### Run it
+### Run it with Docker (one command)
+
+```bash
+docker compose up --build    # Postgres → migrate → seed + detect → API → web, in order
+```
+
+Open **http://localhost:3000**. Add `--profile observability` (and `OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318`)
+to see traces in Jaeger at http://localhost:16686.
+
+### Run it natively
 
 ```bash
 git clone <this-repository-url> HackMatrix
@@ -273,9 +350,14 @@ investigator) first, then **Suresh Iyer** (vigilance) to experience the four-eye
 | `make seed` | Generate the Kestrel-Sim world and load it into Postgres |
 | `make train` | Train M5 and M6 on the independent seed-7 world |
 | `make detect` | Run the pipeline: signals → chains → alibi → briefs |
+| `make live-play` / `make live-reset` | Stream the held-back evening and detect / undo it and re-detect (what Live Ops does) |
 | `make api` / `make web` | Start the API on :8000 / the web app on :3000 |
 | `make test` | Backend tests, including the scenario twins |
 | `make lint` / `make typecheck` | Ruff + ESLint / TypeScript checks |
+| `make check` | Lint, typecheck, tests and a production frontend build (CI's application lane) |
+| `make up` / `make down` | Full stack in Docker / stop it and remove volumes |
+| `make images` | Build the production API and web images |
+| `make helm-lint` / `make tf-check` | Validate the Helm chart / Terraform without touching a cloud account |
 | `make clean` | Remove generated data and caches |
 
 In-memory tests (scenario twins, Alibi, the priority lattice) need no database; the API tests
@@ -322,8 +404,17 @@ HackMatrix/
 │   ├── app/              login, investigator screens, server routes (session, API proxy)
 │   ├── components/       app shell, UI primitives, graph, chain rail, council, brief
 │   └── lib/              API hooks, types, formatting
-├── ml/                   model cards (trained artefacts are generated by `make train`)
-├── docs/                 architecture decision records and screenshots
+├── ml/                   generated by `make train` and the image build (not committed)
+├── docker/               api.Dockerfile (slim, non-root) · web.Dockerfile (distroless)
+├── deploy/
+│   ├── helm/sutra/       Helm chart: API, BFF, migrate hook, detection CronJob, HPA, PDB, NetworkPolicy
+│   ├── argocd/           GitOps: project, staging/prod apps, platform add-ons
+│   ├── policies/         Kyverno: signed images only, read-only root, resource limits
+│   └── observability/    OpenTelemetry collector config
+├── infra/terraform/      AWS: VPC, EKS + Karpenter, RDS, Valkey, S3 Object Lock, KMS, WAF, OIDC
+├── .github/              CI, release (sign + SBOM + provenance), CodeQL, Scorecard, Dependabot
+├── docs/                 ADRs, tech decisions, architecture, operations, security, screenshots
+├── docker-compose.yml
 ├── Makefile
 └── pyproject.toml        uv workspace (backend + kestrel_sim)
 ```
@@ -339,6 +430,15 @@ HackMatrix/
 | [005](docs/adr/005-pseudonymous-by-default.md) | Staff pseudonymous by default; two-person unmask |
 | [006](docs/adr/006-background-work.md) | In-process pipeline and background tasks for the MVP |
 | [007](docs/adr/007-models-and-leakage.md) | Glass-box chain classifier; train on an independent synthetic world |
+| [008](docs/adr/008-container-supply-chain.md) | Signed, minimal, reproducible container images |
+| [009](docs/adr/009-eks-over-ecs.md) | Amazon EKS over ECS or Lambda |
+| [010](docs/adr/010-gitops-argocd.md) | GitOps with Argo CD; canary releases with Argo Rollouts |
+| [011](docs/adr/011-region-and-residency.md) | Mumbai primary, Hyderabad DR — data stays in India |
+| [012](docs/adr/012-evidence-object-lock.md) | Evidence packs in S3 Object Lock (WORM) |
+| [013](docs/adr/013-observability-otel.md) | OpenTelemetry, structured logs and request IDs |
+| [014](docs/adr/014-identity-and-secrets.md) | No long-lived credentials anywhere |
+| [015](docs/adr/015-llm-residency.md) | LLM narration off in production until inference can stay in India |
+| [016](docs/adr/016-live-feed-demo.md) | A live feed for the end-to-end demo; detection re-runs keep IDs and cases |
 
 ## Team
 

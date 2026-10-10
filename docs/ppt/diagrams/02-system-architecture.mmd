@@ -1,0 +1,39 @@
+flowchart LR
+    subgraph SRC["1 · Data sources (synthetic)"]
+        direction TB
+        IAM["IAM<br/>entitlements"]
+        SOC["SOC<br/>sessions"]
+        FRD["Fraud ops<br/>payees · devices"]
+        AML["AML<br/>transactions"]
+        HR["HR<br/>rosters · tickets"]
+    end
+    subgraph DATA["2 · Data layer"]
+        LOOM[("Loom<br/>PostgreSQL<br/>bitemporal events<br/>+ evidence graph")]
+    end
+    subgraph ENGINE["3 · Detection engine"]
+        direction TB
+        ALIBI["Alibi<br/>why was each access made?"]
+        SIG["Signals<br/>10 rules · 5 graph · ML baselines"]
+        NEEDLE["Needle<br/>chain assembly"]
+        ML["M5 chain classifier<br/>M6 mule-likeness"]
+        BRIEF["Brief<br/>7 dimensions · priority lattice"]
+        ALIBI --> SIG --> NEEDLE --> ML --> BRIEF
+    end
+    subgraph AI["4 · Investigation services"]
+        direction TB
+        COUNCIL["Investigation Council<br/>8 agents + moderator"]
+        ASK["Ask SUTRA<br/>cite-or-drop verifier"]
+        MEND["Control Lab (Mend)<br/>counterfactuals"]
+        PACK["Evidence packs<br/>PDF + SHA-256"]
+    end
+    subgraph APP["5 · Application"]
+        direction TB
+        API["FastAPI /api/v1<br/>JWT · rate-limit"]
+        WEB["Next.js 16 investigator app<br/>React 19 · React Flow"]
+        GOV["Governance<br/>8 roles · four-eyes<br/>hash-chained audit<br/>pseudonymous staff"]
+        GOV -.-> API
+        API --> WEB
+    end
+    SRC --> LOOM --> ENGINE --> AI --> APP
+    classDef box fill:#fff,stroke:#A31212,color:#222;
+    class IAM,SOC,FRD,AML,HR,ALIBI,SIG,NEEDLE,ML,BRIEF,COUNCIL,ASK,MEND,PACK,GOV,API,WEB box

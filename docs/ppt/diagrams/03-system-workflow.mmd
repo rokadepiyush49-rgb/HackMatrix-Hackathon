@@ -1,0 +1,22 @@
+flowchart TB
+    subgraph ROW1["Build the evidence"]
+        direction LR
+        A["1 · Ingest<br/>IAM · SOC · fraud · AML · HR"] --> B["2 · Load into Loom<br/>bitemporal + PII tokenised"] --> C["3 · Alibi<br/>ticket · portfolio · queue · roster"] --> D["4 · Entity resolution<br/>+ behaviour baselines"] --> E["5 · Signals<br/>rules · graph · ML"]
+    end
+    subgraph ROW2["Argue the case"]
+        direction LR
+        F["6 · Needle<br/>ACCESS→CHANGE→SESSION<br/>→PAYEE→TXN"] --> G["7 · Score<br/>M5 + M6<br/>with explanations"] --> H{"8 · Brief<br/>benign explanation<br/>supported?"}
+        H -- yes --> I["Explained<br/>suppressed<br/>5% sampled to QA"]
+        H -- no --> J["Priority P1 / P2 / P3<br/>prosecution · defence<br/>missing evidence"]
+    end
+    subgraph ROW3["Human decision"]
+        direction LR
+        K["9 · Analyst review<br/>Council · Ask SUTRA<br/>Control Lab"] --> L["10 · Four-eyes decision<br/>evidence pack · STR draft"] --> M[("Hash-chained<br/>audit log")]
+    end
+    ROW1 --> ROW2
+    ROW2 --> ROW3
+    classDef s fill:#fff,stroke:#A31212,color:#222;
+    class A,B,C,D,E,F,G,H,I,J,K,L,M s
+    style ROW1 fill:#fdf3f2,stroke:#A31212
+    style ROW2 fill:#fdf3f2,stroke:#A31212
+    style ROW3 fill:#fdf3f2,stroke:#A31212

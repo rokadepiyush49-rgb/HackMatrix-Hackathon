@@ -1,0 +1,24 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "api",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-lc",
+        "cd backend && PYTHONPATH=$PWD:$PWD/../data/kestrel_sim uv run --no-sync uvicorn app.main:app --port 8010"
+      ],
+      "port": 8010
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-lc",
+        "cd frontend && SUTRA_API_URL=http://127.0.0.1:8010 npx next dev"
+      ],
+      "port": 3000,
+      "autoPort": true
+    }
+  ]
+}

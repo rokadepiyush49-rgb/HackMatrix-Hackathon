@@ -1,0 +1,60 @@
+1
+00:00:00,300 --> 00:00:08,448
+Hi, we are Team Admiral, and this is SUTRA, our solution for FIN zero four: Financial Crime and Insider Risk Intelligence.
+
+2
+00:00:09,200 --> 00:00:23,663
+SUTRA is an AI-assisted investigation platform that connects what a privileged employee did inside a bank to the money that moved afterwards. It rebuilds scattered events into one time-ordered chain, and checks whether every access had a legitimate reason.
+
+3
+00:00:24,413 --> 00:01:01,468
+Here's the problem. In insider fraud, I A M, the SOC, fraud ops and A M L each see one piece of the chain. Nobody sees the whole thread. Logs show who and when, but never why, so honest employees get flagged too. And alerts arrive as opaque scores. SUTRA answers with three engines. Needle rebuilds the privilege-to-payment chain. Alibi checks every access against tickets, portfolios, queues and rosters. And Brief argues each alert both ways: prosecution and defence. A multi-agent council, and Mend, our counterfactual control lab, complete the picture. Let us show you.
+
+4
+00:01:02,218 --> 00:01:13,910
+We log in as Ananya, an L2 fraud investigator. The Command Center shows one point zero nine crore rupees at risk across five active chains, and the live threat rail surfaces our flagship case.
+
+5
+00:01:14,718 --> 00:01:35,317
+An ops officer used a temporary override, granted nine and a half days earlier and never revoked, to log in after hours, change a dormant pensioner's mobile number, add three payees, and move fourteen point seven lakh, just forty-seven minutes after first access. Every hop is backed by I A M, SOC, fraud or A M L evidence.
+
+6
+00:01:36,118 --> 00:01:45,072
+Ask SUTRA explains why the case was flagged, in plain language. Every sentence cites evidence codes, and any claim that isn't supported is dropped.
+
+7
+00:01:45,851 --> 00:01:59,097
+Instead of a risk score, SUTRA argues the case. Prosecution grounds cite evidence on the left. On the right, the defence tests innocent explanations, like a compromised credential, before anything is escalated.
+
+8
+00:01:59,851 --> 00:02:12,609
+The Alibi Ledger reconciled over fifty-five thousand staff accesses. Ninety-eight point four percent were explained, and only four stayed unexplained. So investigators see five alerts, not seven hundred.
+
+9
+00:02:13,385 --> 00:02:25,574
+In the Evidence War Room, eight specialist agents debate the same records, request missing evidence, and hand a structured finding, including dissent, to a human, who always makes the final decision.
+
+10
+00:02:26,385 --> 00:02:38,059
+Control Lab asks: what would have stopped this? Auto-expiring temporary entitlements breaks the chain at the very first hop, almost seven days early, with zero impact on legitimate operations.
+
+11
+00:02:38,818 --> 00:02:45,959
+And every fraud scenario has a legitimate twin. SUTRA catches all six frauds, and stays quiet on all eight twins.
+
+12
+00:02:46,751 --> 00:03:10,518
+Under the hood: Next.js and FastAPI on PostgreSQL, with bitemporal event storage. The detection pipeline runs Alibi, entity resolution, ten rules and five graph and M L signals, then Needle and Brief. Our models are glass-box, logistic regression and LightGBM with SHAP explanations. And the LLM only writes language. It never scores or closes an alert.
+
+13
+00:03:11,285 --> 00:03:33,876
+It's feasible today: one docker compose command runs the full MVP on a laptop, over four hundred thousand synthetic transactions. And it's viable: fourteen hundred and fifty-seven urban co-operative banks form our beachhead, with RBI's 2024 fraud-risk directions creating regulatory pull. SUTRA plugs into existing systems. No rip and replace.
+
+14
+00:03:34,627 --> 00:03:47,037
+The impact: fairer investigations for employees, far less manual correlation for analysts, and for banks, a shift from investigating fraud after the fact, to fixing the control that enabled it.
+
+15
+00:03:47,793 --> 00:03:58,948
+SUTRA builds on research in explanation-based auditing, temporal cycle detection, and the AML world benchmark. Trace every rupee back to the privileged action that made it possible. Thank you.
+
