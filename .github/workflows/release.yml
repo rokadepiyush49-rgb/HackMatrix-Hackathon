@@ -76,7 +76,7 @@ jobs:
       - uses: sigstore/cosign-installer@v3
       - name: Sign (Sigstore keyless — identity is this workflow, verified by Kyverno at admission)
         run: cosign sign --yes ${{ steps.ecr.outputs.registry }}/sutra-${{ matrix.component }}-staging@${{ steps.build.outputs.digest }}
-      - uses: actions/attest-build-provenance@v2
+      - uses: actions/attest-build-provenance@v4
         with:
           subject-name: ${{ steps.ecr.outputs.registry }}/sutra-${{ matrix.component }}-staging
           subject-digest: ${{ steps.build.outputs.digest }}
