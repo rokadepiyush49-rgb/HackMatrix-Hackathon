@@ -8,7 +8,7 @@ import { useParams } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
 import { DimBars } from "@/components/chain/alert-bits";
-import { Button, ButtonLink, Chip, CountUp, Empty, ErrorBox, PageHeader, Panel, PanelHead, PriorityPill, Skeleton, Tabs, TabsContent, TabsList, TabsTrigger, Tip } from "@/components/ui/primitives";
+import { Button, ButtonLink, Chip, CountUp, Empty, ErrorBox, PageHeader, Panel, PriorityPill, Skeleton, Tabs, TabsContent, TabsList, TabsTrigger, Tip } from "@/components/ui/primitives";
 import { useGet, useMe, usePost } from "@/lib/api";
 import { cn, dayMonth, inr, pct, stamp } from "@/lib/format";
 import type { AlertSummary, EmployeeCard } from "@/lib/types";

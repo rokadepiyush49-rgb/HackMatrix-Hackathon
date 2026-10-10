@@ -9,6 +9,7 @@ import { DimBars, TypologyChip } from "@/components/chain/alert-bits";
 import { Chip, Empty, PageHeader, Panel, PriorityPill, Skeleton } from "@/components/ui/primitives";
 import { useAlerts, useCases } from "@/lib/api";
 import { cn, duration, inr, stamp } from "@/lib/format";
+import { useNow } from "@/lib/hooks";
 import type { CaseFile } from "@/lib/types";
 
 const COLUMNS = [
@@ -18,7 +19,8 @@ const COLUMNS = [
 ];
 
 function CaseCard({ c, i }: { c: CaseFile; i: number }) {
-  const left = c.sla_due_at ? (new Date(c.sla_due_at).getTime() - Date.now()) / 1000 : null;
+  const now = useNow();
+  const left = c.sla_due_at && now !== null ? (new Date(c.sla_due_at).getTime() - now) / 1000 : null;
   return (
     <motion.div layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
       <Link href={`/cases/${c.alert_id}`} className="block rounded-lg border border-line bg-panel-2 p-3 transition-colors hover:border-line-strong">

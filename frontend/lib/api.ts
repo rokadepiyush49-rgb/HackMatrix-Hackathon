@@ -29,6 +29,8 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
     cache: "no-store",
   });
   if (res.status === 401 && typeof window !== "undefined" && !path.startsWith("/auth")) {
+    // A full navigation (not router.push) on purpose: it drops every cached query of the expired session.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
   }
   if (!res.ok) {

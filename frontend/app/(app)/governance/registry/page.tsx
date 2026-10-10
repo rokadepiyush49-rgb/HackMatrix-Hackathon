@@ -5,7 +5,7 @@ import { Bot, Cpu, Sparkles } from "lucide-react";
 import { useState } from "react";
 
 import { AgentAvatar, stanceOf } from "@/components/council/council";
-import { Chip, ErrorBox, PageHeader, Panel, PanelHead, Skeleton, Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/primitives";
+import { Chip, ErrorBox, PageHeader, Panel, Skeleton, Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/primitives";
 import { useGet } from "@/lib/api";
 import { cn, stamp } from "@/lib/format";
 import type { CouncilAgent, Registry } from "@/lib/types";

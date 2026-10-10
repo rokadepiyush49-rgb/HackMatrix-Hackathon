@@ -31,6 +31,7 @@ export interface AlertSummary {
   typology: string;
   typology_label: string;
   claim: string;
+  rule: string;
   summary: string | null;
   priority: Priority;
   state: string;
@@ -437,3 +438,125 @@ export interface Registry {
   agents: (CouncilAgent | Council["moderator"])[];
   llm: { role: string; verifier: string };
 }
+
+// ── Live Ops (demo mode) ──────────────────────────────────────────────────
+
+export type LiveScope = "evening" | "yours" | "bank" | "all";
+
+export interface LiveStage { key: string; label: string; what: string }
+export type StageStatus = "pending" | "running" | "done";
+
+export interface LiveRunSummary {
+  id: string;
+  kind: "feed" | "reset";
+  scope: LiveScope;
+  actor: string;
+  started_at: string;
+  finished: boolean;
+  events: number;
+  result: Record<string, unknown> | null;
+}
+
+export interface LiveStatus {
+  total: number;
+  ingested: number;
+  pending: number;
+  feed_start: string | null;
+  feed_end: string | null;
+  next_t: string | null;
+  stages: LiveStage[];
+  run: LiveRunSummary | null;
+  busy: boolean;
+  yours: { total: number; ingested: number };
+  bank: { total: number; ingested: number };
+}
+
+export type Strand = "attack" | "camp" | "routine";
+
+export interface LiveFeedRow {
+  seq: number;
+  t: string;
+  table: string;
+  ref: string;
+  system: string;
+  summary: string;
+  ingested?: boolean;
+  strand?: Strand;
+  n?: number;
+}
+
+export interface LiveLink { code: string; type: string; event_id: string; t: string; title: string; detail: string; lane: Lane; live: boolean }
+
+export interface LiveAlert {
+  id: string;
+  new: boolean;
+  priority: string;
+  typology: string;
+  typology_label: string;
+  claim: string;
+  rule: string;
+  chain_id: string;
+  amount: number;
+  employee_id: string | null;
+  account_id: string | null;
+  classifier_p: number | null;
+  links: LiveLink[];
+  cited: Record<string, string>;
+}
+
+export interface LiveAlibi {
+  ref: string;
+  employee_id: string;
+  verdict: string;
+  action?: string;
+  t: string;
+  checked: { template: string; ok: boolean; ref: string | null; note: string | null }[];
+}
+
+export interface LiveResult {
+  new?: string[];
+  updated?: string[];
+  alibi?: { explained: number; unexplained: number };
+  scenarios?: { passed: number; total: number };
+  ingested?: number;
+  undone?: number;
+  truth?: Partial<Record<Strand, { events: number; cited: number }>>;
+  verdict?: LiveVerdict | null;
+  signals?: number;
+  detectors?: string[];
+  elapsed: number;
+}
+
+export interface LiveVerdict { outcome: "alert" | "watch" | "updated" | "explained" | "signals"; headline: string; detail: string }
+
+export interface LiveSignal { detector: string; name: string; family: string; strength: number; summary: string }
+
+// ── Your input (compose) ─────────────────────────────────────────────────
+
+export interface ComposeSpec {
+  employee_id: string;
+  account_id: string;
+  at: string;
+  channel: "VPN" | "BRANCH";
+  auth: "OVERRIDE" | "MAKER_ONLY" | "BIOMETRIC";
+  expired_grant: boolean;
+  ticket: boolean;
+  ekyc: boolean;
+  rostered: boolean;
+  change_mobile: boolean;
+  raise_limit_to: number | null;
+  takeover: boolean;
+  payees: string[];
+  amount: number;
+  delay_min: number;
+  ring_reacts: boolean;
+}
+
+export interface ComposeOptions {
+  day: string;
+  staff: { id: string; pseudonym: string; branch_id: string; city: string; terminal: string | null; laptop: string; in_story: boolean }[];
+  accounts: { id: string; holder: string; customer_id: string; segment: string; status: string; branch_id: string; balance: number; daily_limit: number; payees: number }[];
+  payees: { id: string; label: string; kind: "ring" | "outside" | "known" }[];
+}
+
+export interface ComposePreview { rows: LiveFeedRow[]; systems: string[]; money_out: number }

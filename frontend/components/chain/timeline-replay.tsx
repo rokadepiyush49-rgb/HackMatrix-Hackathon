@@ -18,7 +18,7 @@ function at<T extends StatePoint>(series: T[] | undefined, iso: string): T | und
   return cur;
 }
 
-export function useAsOf(replay?: Replay) {
+export function useAsOf() {
   const [asOf, setAsOf] = useState<string | null>(null);
   return { asOf, setAsOf };
 }
@@ -104,7 +104,7 @@ export function TimelineReplay({ replay, asOf, onAsOf, focusAccount }: {
                 <div className="flex h-7 items-center font-mono text-[10px] tracking-wider text-muted">{lane}</div>
                 {/* precursor gutter (days earlier) */}
                 <div className="relative flex h-7 items-center gap-1 border-r border-dashed border-line-strong pr-2">
-                  {precursor.filter((e) => (lane === "IAM" ? true : false)).map((e, i) => (
+                  {precursor.filter(() => lane === "IAM").map((e, i) => (
                     <Tip key={i} content={<><b>{e.title}</b><br />{e.detail}<br /><span className="num text-faint">{dayMonth(e.t)} {hhmm(e.t)}</span></>}>
                       <span className={cn("rounded px-1 font-mono text-[9.5px] text-white", iso >= e.t ? "bg-ai" : "bg-ai/30")}>{dayMonth(e.t)}</span>
                     </Tip>

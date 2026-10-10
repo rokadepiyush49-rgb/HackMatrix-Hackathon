@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { ArrowRight, FastForward, FileQuestion, Gavel, Pause, Play, RotateCcw, ShieldAlert, Sparkles, UserCheck } from "lucide-react";
+import { ArrowRight, FastForward, FileQuestion, Gavel, Pause, Play, RotateCcw, ShieldAlert, Sparkles, UserCheck, Volume2, VolumeX } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -12,40 +12,66 @@ import { Button, Chip, ErrorBox, PageHeader, Panel, PanelHead, Skeleton, Tabs, T
 import { useAlert, useCouncil } from "@/lib/api";
 import { cn } from "@/lib/format";
 import type { Council, CouncilEntry } from "@/lib/types";
+import { PERSONAS, speak, useVoices, useVoiceSetting, useVoiceSupported } from "@/lib/voice";
 
 const SPEEDS = [1, 2, 4];
+const SPEECH_RATE: Record<number, number> = { 1: 1, 2: 1.3, 4: 1.6 };
 
-function useDebate(c?: Council) {
+function useDebate(c: Council | undefined, voiced: boolean, voices: SpeechSynthesisVoice[]) {
   const reduce = useReducedMotion();
   const flat = useMemo(
     () => (c ? c.rounds.flatMap((r) => r.entries.map((e, i) => ({ e, round: r, first: i === 0 }))) : []),
     [c],
   );
-  const [shown, setShown] = useState(0);
-  const [playing, setPlaying] = useState(true);
+  const [step, setStep] = useState(0);
+  const [paused, setPaused] = useState(false);
   const [speed, setSpeed] = useState(1);
+  // Reduced motion shows the whole debate at once. Otherwise entries reveal on a timer — or, with
+  // voice on, as each speaker finishes, so the last line is heard before the ruling appears.
+  const total = flat.length;
+  const speaking = voiced && !reduce;
+  const end = speaking ? total + 1 : total;
+  const shown = reduce ? total : Math.min(step, total);
+  const done = total > 0 && (reduce || step >= end);
+  const playing = !paused && !done && !reduce;
 
   useEffect(() => {
-    if (!flat.length) return;
-    if (reduce) { setShown(flat.length); setPlaying(false); return; }
-    if (!playing || shown >= flat.length) return;
+    if (!playing || !total) return;
+    if (speaking && shown > 0) {
+      const e = flat[shown - 1].e;
+      let t: ReturnType<typeof setTimeout> | undefined;
+      const stop = speak(e.text, PERSONAS[e.speaker] ?? PERSONAS.moderator, voices, {
+        rate: SPEECH_RATE[speed] ?? 1,
+        onDone: () => { t = setTimeout(() => setStep((s) => s + 1), 260); },
+      });
+      return () => { stop(); clearTimeout(t); };
+    }
     const prev = flat[shown - 1]?.e;
     const base = prev?.kind === "RETRIEVAL" ? 1500 : prev?.kind === "RULING" ? 1600 : 1100;
-    const t = setTimeout(() => setShown((s) => s + 1), shown === 0 ? 500 : base / speed);
+    const t = setTimeout(() => setStep((s) => s + 1), shown === 0 ? 500 : base / speed);
     return () => clearTimeout(t);
-  }, [flat, shown, playing, speed, reduce]);
-
-  useEffect(() => { if (shown >= flat.length && flat.length) setPlaying(false); }, [shown, flat.length]);
+  }, [flat, shown, playing, speed, total, speaking, voices]);
 
   return {
-    flat, shown, playing, speed,
-    done: flat.length > 0 && shown >= flat.length,
+    flat, shown, playing, speed, done, speaking: speaking && playing && shown > 0,
     current: (flat[shown - 1]?.e ?? null) as CouncilEntry | null,
-    toggle: () => { if (shown >= flat.length) setShown(0); setPlaying((p) => !p || shown >= flat.length); },
-    skip: () => { setShown(flat.length); setPlaying(false); },
-    restart: () => { setShown(0); setPlaying(true); },
+    toggle: () => { if (done) { setStep(0); setPaused(false); } else setPaused((p) => !p); },
+    skip: () => setStep(end),
+    restart: () => { setStep(0); setPaused(false); },
     cycleSpeed: () => setSpeed((s) => SPEEDS[(SPEEDS.indexOf(s) + 1) % SPEEDS.length]),
   };
+}
+
+/** A small level meter beside whoever is talking. */
+function SpeakingBars() {
+  return (
+    <span className="ml-1.5 inline-flex h-3 items-end gap-[2px] align-middle" aria-hidden>
+      {[0, 1, 2, 3].map((k) => (
+        <motion.span key={k} className="w-[2px] rounded-full bg-ai" animate={{ height: ["30%", "100%", "45%", "80%", "30%"] }}
+          transition={{ repeat: Infinity, duration: 0.9, delay: k * 0.12, ease: "easeInOut" }} />
+      ))}
+    </span>
+  );
 }
 
 export default function CouncilRoom() {
@@ -54,7 +80,10 @@ export default function CouncilRoom() {
   const { data: c, error, isLoading } = useCouncil(id);
   const { data: alert } = useAlert(id);
   const pool = alert?.evidence ?? [];
-  const d = useDebate(c);
+  const [voiceOn, setVoiceOn] = useVoiceSetting();
+  const voices = useVoices();
+  const canSpeak = useVoiceSupported();
+  const d = useDebate(c, voiceOn, voices);
   const [picked, setPicked] = useState<string | null>(null);
   const [claimFilter, setClaimFilter] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
@@ -91,6 +120,12 @@ export default function CouncilRoom() {
             <span className="rounded-md border border-ai/30 bg-ai-soft px-2.5 py-1 text-[12px] text-ai">No confidence score — every claim carries a status</span>
             <div className="ml-auto flex items-center gap-1.5">
               <span className="num mr-1 text-[11.5px] text-faint">{d.shown}/{d.flat.length}</span>
+              {canSpeak && (
+                <Button size="sm" variant={voiceOn ? "ai" : "ghost"} onClick={() => setVoiceOn(!voiceOn)} aria-pressed={voiceOn}
+                  title="Each agent speaks in its own voice (your browser's speech, offline)">
+                  {voiceOn ? <Volume2 size={13} /> : <VolumeX size={13} />} Voice
+                </Button>
+              )}
               <Button size="sm" variant="outline" onClick={d.toggle}>{d.playing ? <><Pause size={13} /> Pause</> : <><Play size={13} /> {d.done ? "Replay" : "Resume"}</>}</Button>
               <Button size="sm" variant="ghost" onClick={d.cycleSpeed}>{d.speed}×</Button>
               <Button size="sm" variant="ghost" onClick={d.restart}><RotateCcw size={13} /></Button>
@@ -108,7 +143,7 @@ export default function CouncilRoom() {
                     <motion.div key={d.shown} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.2 }}>
                       <div className="eyebrow mb-0.5">Round {d.current.round} · {d.flat[d.shown - 1]?.round.title}</div>
                       <p className="line-clamp-2 text-[13px] leading-snug text-ink">
-                        <b>{d.current.speaker === "moderator" ? c.moderator.name : c.agents.find((a) => a.id === d.current!.speaker)?.name}:</b> {d.current.text}
+                        <b>{d.current.speaker === "moderator" ? c.moderator.name : c.agents.find((a) => a.id === d.current!.speaker)?.name}{d.speaking && <SpeakingBars />}:</b> {d.current.text}
                       </p>
                     </motion.div>
                   ) : <p className="text-[13px] text-muted">The council is convening…</p>}

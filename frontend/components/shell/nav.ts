@@ -14,6 +14,7 @@ import {
   Library,
   Network,
   Radar,
+  Radio,
   ReceiptText,
   Scale,
   ScanSearch,
@@ -37,7 +38,13 @@ export interface NavSection {
 }
 
 export const NAV: NavSection[] = [
-  { title: null, items: [{ href: "/", label: "Command Center", icon: Radar }] },
+  {
+    title: null,
+    items: [
+      { href: "/", label: "Command Center", icon: Radar },
+      { href: "/live", label: "Live Ops", icon: Radio },
+    ],
+  },
   {
     title: "Investigate",
     items: [

@@ -3,7 +3,7 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "motion/react";
-import { Clock, FileStack, Gavel, Landmark, ShieldCheck, Sparkles, UserCheck, X } from "lucide-react";
+import { Clock, FileStack, Gavel, Landmark, ShieldCheck, Sparkles, UserCheck } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";

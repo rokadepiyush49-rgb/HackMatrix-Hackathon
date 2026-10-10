@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { EyeOff, Link2 } from "lucide-react";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 
 import { AlertPicker } from "@/components/chain/alert-bits";
 import { ChainRail } from "@/components/chain/chain-rail";
@@ -22,8 +22,14 @@ function Replayer() {
   const [at] = useParam("at");
   const { data: replay, error } = useReplay(alertId);
   const { data: alert } = useAlert(alertId);
-  const [asOf, setAsOf] = useState<string | null>(at);
-  useEffect(() => setAsOf(at), [alertId, at]);
+  // `?at=` takes an ISO time or a bare HH:MM on the evening of the chain (IST).
+  const evening = replay?.links.find((l) => l.code === "E1")?.t ?? replay?.window.end;
+  const linked = at && /^\d{2}:\d{2}$/.test(at) ? (evening ? `${evening.slice(0, 10)}T${at}:00+05:30` : null) : at;
+  // A scrub is remembered per case and deep link, so changing either starts from the link again.
+  const key = `${alertId}|${at}`;
+  const [scrub, setScrub] = useState<{ key: string; v: string | null } | null>(null);
+  const asOf = scrub?.key === key ? scrub.v : linked;
+  const setAsOf = (v: string | null) => setScrub({ key, v });
 
   const known = replay?.events.filter((e) => !asOf || e.t <= asOf) ?? [];
   const moneyGone = replay?.links.find((l) => l.code === "E5" && (!asOf || l.t <= asOf));
@@ -33,7 +39,7 @@ function Replayer() {
       <PageHeader eyebrow="Intelligence · Timeline Replay"
         title={<>What did the bank know at <span className="num text-threat">{asOf ? hhmm(asOf) : "the end"}</span>?</>}
         sub="Scrub the evening. Each team's system saw a piece — IAM the privilege, SOC the odd login, Fraud the payee, AML the layering. Nobody saw the thread until SUTRA joined them."
-        right={<AlertPicker value={alertId} onChange={(v) => { setAsOf(null); setAlert(v); }} />} />
+        right={<AlertPicker value={alertId} onChange={(v) => setAlert(v)} />} />
       {error && <ErrorBox error={error} />}
       {!replay && !error && <Skeleton className="h-[520px]" />}
 
