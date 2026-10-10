@@ -63,24 +63,31 @@ def friction(f: Frames, chain_refs: set[str], alibi: pd.DataFrame) -> dict[str, 
     sens = ae[ae["action"].isin(["MOBILE_UPDATE", "LIMIT_CHANGE", "ADDRESS_UPDATE"])]
     off = sens[sens["id"].isin(ex.index[~ex["timing_ok"]])]
 
+    # Indexed by person/account once: filtering the full tables per change took ~15 s.
+    empty_ae, empty_ben = ae.iloc[0:0], f.beneficiary.iloc[0:0]
+    overrides_by_emp = dict(tuple(ae[ae["override_used"]].groupby("employee_id")))
+    ben_by_acct = dict(tuple(f.beneficiary.groupby("account_id")))
+    tx = f.txn[~f.txn["id"].isin(chain_refs)]
+    empty_tx = tx.iloc[0:0]
+    tx_by_from = dict(tuple(tx.groupby("from_account")))
+
     # expired-entitlement uses outside flagged chains
     ent = f.entitlement[f.entitlement["intended_expiry"].notna()]
     expired_uses = 0
     for g in ent.itertuples(index=False):
-        uses = ae[(ae["employee_id"] == g.employee_id) & ae["override_used"] & (ae["occurred_at"] > g.intended_expiry)]
-        expired_uses += len(uses)
+        uses = overrides_by_emp.get(g.employee_id, empty_ae)
+        expired_uses += int((uses["occurred_at"] > g.intended_expiry).sum())
 
     # payments to new payees within 24 h of a contact change
     contact = sc[sc["field"].isin(["REGISTERED_MOBILE", "PASSWORD"])]
-    ben = f.beneficiary
-    tx = f.txn[~f.txn["id"].isin(chain_refs)]
     cooled = 0
     for c in contact.itertuples(index=False):
-        b = ben[(ben["account_id"] == c.account_id) & (ben["added_at"] > c.occurred_at)
-                & (ben["added_at"] <= c.occurred_at + pd.Timedelta(hours=24))]
+        ben = ben_by_acct.get(c.account_id, empty_ben)
+        b = ben[(ben["added_at"] > c.occurred_at) & (ben["added_at"] <= c.occurred_at + pd.Timedelta(hours=24))]
         if len(b):
-            cooled += int(tx[(tx["from_account"] == c.account_id) & tx["to_account"].isin(b["counterparty_account"])
-                             & (tx["occurred_at"] <= c.occurred_at + pd.Timedelta(hours=48))].shape[0])
+            out = tx_by_from.get(c.account_id, empty_tx)
+            cooled += int((out["to_account"].isin(b["counterparty_account"])
+                           & (out["occurred_at"] <= c.occurred_at + pd.Timedelta(hours=48))).sum())
 
     dormant = f.account[f.account["status"] == "INOPERATIVE"]["id"]
     reactivations = int(tx[tx["from_account"].isin(dormant)]["from_account"].nunique())
@@ -88,9 +95,9 @@ def friction(f: Frames, chain_refs: set[str], alibi: pd.DataFrame) -> dict[str, 
     lim = sc[sc["field"] == "TXN_LIMIT"]
     fast = 0
     for c in lim.itertuples(index=False):
-        fast += int(tx[(tx["from_account"] == c.account_id) & (tx["occurred_at"] > c.occurred_at)
-                       & (tx["occurred_at"] <= c.occurred_at + pd.Timedelta(hours=12))
-                       & (tx["amount"] >= float(c.old_value) / 100)].shape[0])
+        out = tx_by_from.get(c.account_id, empty_tx)
+        fast += int(((out["occurred_at"] > c.occurred_at) & (out["occurred_at"] <= c.occurred_at + pd.Timedelta(hours=12))
+                     & (out["amount"] >= float(c.old_value) / 100)).sum())
 
     self_appr = int(((f.account["opened_by"] == f.account["kyc_approved_by"]) & f.account["opened_by"].notna()
                      & (f.account["opened_at"] >= f.window_start) & ~f.account["id"].isin(chain_refs)).sum())

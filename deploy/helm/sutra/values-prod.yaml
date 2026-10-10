@@ -1,0 +1,14 @@
+global: { env: prod }
+api:
+  replicas: 3                   # one per AZ in ap-south-1
+  autoscaling: { minReplicas: 3, maxReplicas: 12 }
+  pdb: { minAvailable: 2 }
+  rollout: { enabled: true }    # canary every release; auto-abort on failed analysis
+web:
+  replicas: 3
+  autoscaling: { minReplicas: 3, maxReplicas: 9 }
+  pdb: { minAvailable: 2 }
+  demoMode: false
+config:
+  logLevel: INFO
+ingress: { host: sutra.example.in }

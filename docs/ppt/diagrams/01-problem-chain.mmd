@@ -1,0 +1,14 @@
+flowchart LR
+    subgraph R1[" "]
+        direction LR
+        E0["E0 · Temp override granted<br/>IAM team"] -->|9 days| E1["E1 · Off-hours login 21:47<br/>SOC"] --> E2["E2 · Dormant account opened<br/>App audit log"] --> E3["E3 · Mobile number changed<br/>override, no OTP"]
+    end
+    subgraph R2[" "]
+        direction LR
+        E4["E4 · 3 new payees<br/>Fraud ops"] --> E5["E5 · ₹14.7 L sent 22:34<br/>Payments"] --> E6["E6 · Loop closes 23:58<br/>AML"]
+    end
+    R1 --> R2
+    classDef t fill:#F7E1DE,stroke:#A31212,color:#3a0a0a;
+    class E0,E1,E2,E3,E4,E5,E6 t
+    style R1 fill:none,stroke:none
+    style R2 fill:none,stroke:none

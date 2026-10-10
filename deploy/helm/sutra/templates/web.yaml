@@ -1,0 +1,67 @@
+{{- $c := dict "root" . "component" "web" -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "sutra.fullname" . }}-web
+  labels: {{- include "sutra.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+spec:
+  {{- if not .Values.web.autoscaling.enabled }}
+  replicas: {{ .Values.web.replicas }}
+  {{- end }}
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels: {{- include "sutra.selector" $c | nindent 6 }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxSurge: 1, maxUnavailable: 0 }
+  template:
+    metadata:
+      labels: {{- include "sutra.selector" $c | nindent 8 }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccounts.web }}
+      automountServiceAccountToken: false
+      securityContext: {{- include "sutra.podSecurity" . | nindent 8 }}
+      terminationGracePeriodSeconds: 30
+      {{- include "sutra.spread" $c | nindent 6 }}
+      containers:
+        - name: web
+          image: {{ include "sutra.image" (dict "root" . "name" "web") }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          ports: [{ name: http, containerPort: {{ .Values.web.port }} }]
+          env:
+            # The BFF reaches the API inside the cluster; the browser never sees the API or a JWT.
+            - { name: SUTRA_API_URL, value: "http://{{ include "sutra.fullname" . }}-api" }
+            - { name: SUTRA_DEMO_MODE, value: {{ .Values.web.demoMode | quote }} }
+            - { name: OTEL_SERVICE_NAME, value: sutra-web }
+            {{- with .Values.config.otelEndpoint }}
+            - { name: OTEL_EXPORTER_OTLP_ENDPOINT, value: {{ . | quote }} }
+            {{- end }}
+          resources: {{- toYaml .Values.web.resources | nindent 12 }}
+          securityContext: {{- include "sutra.containerSecurity" . | nindent 12 }}
+          readinessProbe:
+            httpGet: { path: /api/health, port: http }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /api/health, port: http }
+            periodSeconds: 10
+            failureThreshold: 3
+          lifecycle:
+            preStop: { sleep: { seconds: 10 } }
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+            - { name: next-cache, mountPath: /app/.next/cache }
+      volumes:
+        - { name: tmp, emptyDir: { sizeLimit: 128Mi } }
+        - { name: next-cache, emptyDir: { sizeLimit: 256Mi } }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "sutra.fullname" . }}-web
+  labels: {{- include "sutra.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+spec:
+  type: ClusterIP
+  selector: {{- include "sutra.selector" $c | nindent 4 }}
+  ports: [{ name: http, port: 80, targetPort: http }]

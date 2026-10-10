@@ -5,7 +5,7 @@ import { Bot, Cpu, Sparkles } from "lucide-react";
 import { useState } from "react";
 
 import { AgentAvatar, stanceOf } from "@/components/council/council";
-import { Chip, ErrorBox, PageHeader, Panel, PanelHead, Skeleton, Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/primitives";
+import { Chip, ErrorBox, PageHeader, Panel, Skeleton, Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/primitives";
 import { useGet } from "@/lib/api";
 import { cn, stamp } from "@/lib/format";
 import type { CouncilAgent, Registry } from "@/lib/types";
@@ -66,7 +66,7 @@ export default function RegistryPage() {
                     ))}
                   </div>
                   <div className="mt-3 flex flex-wrap gap-1">{m.features.map((f) => <Chip key={f} tone="faint" className="!normal-case">{f}</Chip>)}</div>
-                  <p className="mt-2 text-[11px] text-faint">{String(m.metrics.note ?? "")} Training seed {m.train_seed}, n = {m.n_train.toLocaleString("en-IN")}.</p>
+                  <p className="mt-2 text-[11px] text-faint">{String(m.metrics.note ?? "")} Training worlds {m.train_seeds?.join(", ") ?? "—"}, n = {m.n_train.toLocaleString("en-IN")}.</p>
                 </Panel>
               ))}
             </div>

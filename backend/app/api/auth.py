@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core import audit
+from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.limiter import limiter
 from app.core.security import CurrentUser, decode, issue_tokens, verify_password
@@ -74,4 +75,6 @@ def me(p: CurrentUser) -> dict:
 @router.get("/demo-users", response_model=list[DemoUserOut])
 def demo_users(db: Annotated[Session, Depends(get_db)]) -> list[AppUser]:
     """Seeded personas for the sign-in screen (local demo data only)."""
+    if not get_settings().demo_mode:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
     return db.query(AppUser).order_by(AppUser.id).all()

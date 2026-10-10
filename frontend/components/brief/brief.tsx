@@ -146,13 +146,18 @@ const TEMPLATE_LABEL: Record<string, string> = {
   ROSTER: "Rostered shift",
 };
 
+/** Animates the five-template search. Remounts (and so replays) when the card's content or `replayKey` changes. */
 export function AlibiResolution({ card, title, replayKey }: { card: AlibiCard; title?: string; replayKey?: string }) {
+  const key = `${replayKey ?? ""}|${card.verdict}|${card.checked.map((c) => `${c.template}${c.ok ? 1 : 0}`).join("")}`;
+  return <AlibiSearch key={key} card={card} title={title} />;
+}
+
+function AlibiSearch({ card, title }: { card: AlibiCard; title?: string }) {
   const [step, setStep] = useState(0);
   useEffect(() => {
-    setStep(0);
     const id = setInterval(() => setStep((s) => (s >= card.checked.length ? s : s + 1)), 380);
     return () => clearInterval(id);
-  }, [card, replayKey]);
+  }, [card.checked.length]);
   const done = step >= card.checked.length;
   const found = card.checked.slice(0, step).filter((c) => c.ok).length;
   return (

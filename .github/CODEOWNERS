@@ -1,0 +1,11 @@
+# Reviews are requested automatically from the owners of the paths a PR touches.
+# Replace the handles with the four team members' GitHub usernames.
+*                                   @rokadepiyush49-rgb
+/backend/app/needle/                @rokadepiyush49-rgb
+/backend/app/alibi/                 @rokadepiyush49-rgb
+/backend/app/ml/                    @rokadepiyush49-rgb
+/frontend/                          @rokadepiyush49-rgb
+/infra/                             @rokadepiyush49-rgb
+/deploy/                            @rokadepiyush49-rgb
+/docker/                            @rokadepiyush49-rgb
+/.github/                           @rokadepiyush49-rgb

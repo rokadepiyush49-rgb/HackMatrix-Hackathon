@@ -22,13 +22,13 @@ export default function SignalDesk() {
   const router = useRouter();
   const [filter, setFilter] = useState("queued");
   const { data, error, isLoading } = useAlerts(FILTERS.find((f) => f.key === filter)!.q);
-  const [sel, setSel] = useState(0);
+  const [cursor, setSel] = useState(0);
   const rows = useMemo(() => data ?? [], [data]);
+  const sel = Math.min(cursor, Math.max(0, rows.length - 1));
   const current = rows[sel];
   const { data: detail } = useAlert(current?.id);
   const live = useLive();
 
-  useEffect(() => setSel(0), [filter]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.tagName === "INPUT") return;
@@ -54,7 +54,7 @@ export default function SignalDesk() {
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <Filter size={14} className="text-faint" />
         {FILTERS.map((f) => (
-          <button key={f.key} onClick={() => setFilter(f.key)}
+          <button key={f.key} onClick={() => { setFilter(f.key); setSel(0); }}
             className={cn("rounded-full border px-3 py-1 text-[12.5px] font-medium", filter === f.key ? "border-ink bg-ink text-bg" : "border-line text-muted hover:text-ink")}>
             {f.label}
           </button>

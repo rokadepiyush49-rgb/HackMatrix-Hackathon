@@ -1,39 +1,127 @@
-# One-command stack for machines with Docker. Without Docker, use the Makefile
-# targets against a local PostgreSQL (see README → Quickstart).
+# SUTRA — full stack on one machine.
+#
+#   docker compose up --build                       # app at http://localhost:3000
+#   OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318 docker compose --profile observability up
+#                                                   # + OpenTelemetry collector and Jaeger (http://localhost:16686)
+#
+# Start order is enforced, not hoped for:
+#   postgres (healthy) → migrate (completed) → seed (completed) → api (healthy) → web
+#
+# Local-only credentials below; real environments get secrets from AWS Secrets Manager (see deploy/).
+
+x-api-env: &api-env
+  SUTRA_ENV: dev
+  SUTRA_DATABASE_URL: postgresql+psycopg://sutra:sutra-local-dev@postgres:5432/sutra
+  SUTRA_JWT_SECRET: ${SUTRA_JWT_SECRET:-change-me-local-dev-only}
+  SUTRA_PII_HMAC_KEY: ${SUTRA_PII_HMAC_KEY:-change-me-local-dev-only}
+  SUTRA_DEMO_PASSWORD: ${SUTRA_DEMO_PASSWORD:-sutra-demo}
+  SUTRA_STORAGE_DIR: /tmp/packs
+  SUTRA_RATE_LIMIT_STORAGE_URI: redis://valkey:6379/0
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+  OTEL_SERVICE_NAME: sutra-api
+
+x-api-image: &api-image
+  image: sutra-api:local
+  build:
+    context: .
+    dockerfile: docker/api.Dockerfile
+
 services:
   postgres:
-    image: postgres:17
+    image: postgres:17-alpine
     environment:
       POSTGRES_DB: sutra
       POSTGRES_USER: sutra
       POSTGRES_PASSWORD: sutra-local-dev
-    ports: ["5432:5432"]
+    ports: ["127.0.0.1:5432:5432"]
     volumes: [pgdata:/var/lib/postgresql/data]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sutra"]
-      interval: 5s
-      retries: 10
+      test: ["CMD-SHELL", "pg_isready -U sutra -d sutra"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # Valkey: the open-source (Linux Foundation) Redis fork; ElastiCache runs the same engine in AWS.
+  valkey:
+    image: valkey/valkey:8-alpine
+    command: ["valkey-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 3s
+      retries: 20
+
+  migrate:
+    <<: *api-image
+    environment: *api-env
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: "no"
+
+  seed:
+    <<: *api-image
+    environment: *api-env
+    # Generates the synthetic world (seed 42), loads it and runs detection. Models are baked into the image.
+    command: ["python", "-m", "app.cli", "demo"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    restart: "no"
 
   api:
-    build: { context: ., dockerfile: docker/api.Dockerfile }
-    environment:
-      SUTRA_DATABASE_URL: postgresql+psycopg://sutra:sutra-local-dev@postgres:5432/sutra
-      SUTRA_JWT_SECRET: ${SUTRA_JWT_SECRET:-change-me-local-dev-only}
-      SUTRA_PII_HMAC_KEY: ${SUTRA_PII_HMAC_KEY:-change-me-local-dev-only}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-    command: >
-      sh -c "cd backend && alembic upgrade head &&
-             cd .. && python -m app.cli demo &&
-             cd backend && uvicorn app.main:app --host 0.0.0.0 --port 8000"
-    ports: ["8000:8000"]
-    depends_on: { postgres: { condition: service_healthy } }
+    <<: *api-image
+    environment: *api-env
+    ports: ["127.0.0.1:8000:8000"]
+    read_only: true
+    tmpfs: ["/tmp"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    depends_on:
+      seed: { condition: service_completed_successfully }
+      valkey: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health/ready').status==200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
 
   web:
-    build: { context: ., dockerfile: docker/web.Dockerfile }
+    image: sutra-web:local
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
     environment:
       SUTRA_API_URL: http://api:8000
-    ports: ["3000:3000"]
-    depends_on: [api]
+      SUTRA_DEMO_MODE: "true"
+      SUTRA_DEMO_PASSWORD: ${SUTRA_DEMO_PASSWORD:-sutra-demo}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OTEL_SERVICE_NAME: sutra-web
+    ports: ["127.0.0.1:3000:3000"]
+    read_only: true
+    tmpfs: ["/tmp", "/app/.next/cache"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    depends_on:
+      api: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "/nodejs/bin/node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  # ── observability (opt-in) ───────────────────────────────────────────────
+  otel-collector:
+    profiles: [observability]
+    image: otel/opentelemetry-collector-contrib:0.111.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes: ["./deploy/observability/otel-collector.yaml:/etc/otelcol/config.yaml:ro"]
+    depends_on: [jaeger]
+
+  jaeger:
+    profiles: [observability]
+    image: jaegertracing/all-in-one:1.62.0
+    ports: ["127.0.0.1:16686:16686"]
 
 volumes:
   pgdata:

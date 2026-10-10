@@ -1,0 +1,13 @@
+apiVersion: v2
+name: sutra
+description: SUTRA — privilege-to-payment intelligence (API, investigator app, migrations and detection jobs)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+kubeVersion: ">=1.30.0-0"   # native preStop sleep action
+home: https://github.com/rokadepiyush49-rgb/HackMatrix-Hackathon
+sources:
+  - https://github.com/rokadepiyush49-rgb/HackMatrix-Hackathon
+keywords: [fraud, aml, insider-risk, investigation]
+annotations:
+  artifacthub.io/license: Apache-2.0

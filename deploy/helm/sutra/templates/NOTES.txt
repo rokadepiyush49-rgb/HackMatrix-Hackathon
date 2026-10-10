@@ -1,0 +1,6 @@
+SUTRA {{ .Chart.AppVersion }} deployed to {{ .Release.Namespace }} ({{ .Values.global.env }}).
+
+  App:          https://{{ .Values.ingress.host }}
+  API (internal): http://{{ include "sutra.fullname" . }}-api.{{ .Release.Namespace }}.svc
+  Readiness:    kubectl -n {{ .Release.Namespace }} get pods -l app.kubernetes.io/instance={{ .Release.Name }}
+  Detection:    kubectl -n {{ .Release.Namespace }} create job --from=cronjob/{{ include "sutra.fullname" . }}-detect detect-now

@@ -42,7 +42,8 @@ def g1_temporal_cycles(f: Frames) -> list[dict]:
                 continue
             if nxt == start and len(path) >= 1:
                 cyc = [*path, (node, nxt, t, amt, tid)]
-                if amt / cyc[0][3] >= p["min_retention"]:
+                # More coming back than went out is two unrelated transfers, not the same funds going round.
+                if p["min_retention"] <= amt / cyc[0][3] <= p["max_retention"]:
                     found.setdefault(frozenset(x[4] for x in cyc), cyc)
                 continue
             if nxt in visited or len(path) + 1 >= p["max_len"]:

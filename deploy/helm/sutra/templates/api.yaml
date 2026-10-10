@@ -1,0 +1,81 @@
+{{- $c := dict "root" . "component" "api" -}}
+{{- if .Values.api.rollout.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+{{- else }}
+apiVersion: apps/v1
+kind: Deployment
+{{- end }}
+metadata:
+  name: {{ include "sutra.fullname" . }}-api
+  labels: {{- include "sutra.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  {{- if not .Values.api.autoscaling.enabled }}
+  replicas: {{ .Values.api.replicas }}
+  {{- end }}
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels: {{- include "sutra.selector" $c | nindent 6 }}
+  {{- if .Values.api.rollout.enabled }}
+  strategy:
+    canary:
+      # Shift a slice of traffic to the new version, watch it, then continue — or abort and roll back.
+      steps: {{- toYaml .Values.api.rollout.steps | nindent 8 }}
+  {{- else }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxSurge: 1, maxUnavailable: 0 }   # never drop below desired capacity mid-deploy
+  {{- end }}
+  template:
+    metadata:
+      labels: {{- include "sutra.selector" $c | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccounts.api }}
+      automountServiceAccountToken: true   # Pod Identity injects AWS credentials through the projected token
+      securityContext: {{- include "sutra.podSecurity" . | nindent 8 }}
+      terminationGracePeriodSeconds: 40
+      {{- include "sutra.spread" $c | nindent 6 }}
+      containers:
+        - name: api
+          image: {{ include "sutra.image" (dict "root" . "name" "api") }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          ports: [{ name: http, containerPort: {{ .Values.api.port }} }]
+          {{- include "sutra.apiEnv" . | nindent 10 }}
+            - { name: SUTRA_DB_STATEMENT_TIMEOUT_MS, value: {{ .Values.api.statementTimeoutMs | quote }} }
+            - { name: OTEL_SERVICE_NAME, value: sutra-api }
+          resources: {{- toYaml .Values.api.resources | nindent 12 }}
+          securityContext: {{- include "sutra.containerSecurity" . | nindent 12 }}
+          # startup: model artifacts and pandas imports take a few seconds; liveness waits for it.
+          startupProbe:
+            httpGet: { path: /health/live, port: http }
+            periodSeconds: 2
+            failureThreshold: 30
+          readinessProbe:
+            httpGet: { path: /health/ready, port: http }
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet: { path: /health/live, port: http }
+            periodSeconds: 10
+            failureThreshold: 3
+          lifecycle:
+            # Let the ALB finish deregistering the target before uvicorn stops accepting connections.
+            preStop: { sleep: { seconds: 10 } }
+          volumeMounts: [{ name: tmp, mountPath: /tmp }]
+      volumes:
+        - name: tmp
+          emptyDir: { sizeLimit: 512Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "sutra.fullname" . }}-api
+  labels: {{- include "sutra.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  type: ClusterIP
+  selector: {{- include "sutra.selector" $c | nindent 4 }}
+  ports: [{ name: http, port: 80, targetPort: http }]

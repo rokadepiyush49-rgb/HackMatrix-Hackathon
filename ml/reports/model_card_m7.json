@@ -1,0 +1,417 @@
+{
+  "model": "M7 connected-case prioritiser",
+  "algorithm": "LightGBM (300 trees, 15 leaves) with TreeSHAP; Platt calibration on grouped out-of-fold scores; operating threshold maximises out-of-fold F1",
+  "unit": "Connected case (app.ml.cases): chains and seeding signals joined by shared accounts, customers, devices or counterparties \u2014 never by staff",
+  "label": "1 when the case touches a suspicious scenario instance (docs/ml/labeling.md)",
+  "features": [
+    {
+      "feature": "g_accounts",
+      "label": "Bank accounts in the case",
+      "family": "graph"
+    },
+    {
+      "feature": "g_customers",
+      "label": "Customers in the case",
+      "family": "graph"
+    },
+    {
+      "feature": "g_employees",
+      "label": "Staff involved",
+      "family": "graph"
+    },
+    {
+      "feature": "g_devices",
+      "label": "Devices involved",
+      "family": "graph"
+    },
+    {
+      "feature": "g_external_share",
+      "label": "Share of counterparties at other banks",
+      "family": "graph"
+    },
+    {
+      "feature": "g_new_account_share",
+      "label": "Accounts opened in the last 90 days",
+      "family": "graph"
+    },
+    {
+      "feature": "g_presenceless_share",
+      "label": "New accounts opened without the customer present",
+      "family": "graph"
+    },
+    {
+      "feature": "g_self_approved_share",
+      "label": "Accounts whose opener approved their own KYC",
+      "family": "graph"
+    },
+    {
+      "feature": "g_opener_concentration",
+      "label": "New accounts opened by one employee",
+      "family": "graph"
+    },
+    {
+      "feature": "g_shared_identifier",
+      "label": "Accounts sharing a device or phone with other customers",
+      "family": "graph"
+    },
+    {
+      "feature": "g_max_fan_in",
+      "label": "Most distinct senders into one account",
+      "family": "graph"
+    },
+    {
+      "feature": "g_max_pass_through",
+      "label": "Inflow forwarded within 60 min",
+      "family": "graph"
+    },
+    {
+      "feature": "g_cash_out",
+      "label": "Share cashed out at ATMs",
+      "family": "graph"
+    },
+    {
+      "feature": "g_cycle_retention",
+      "label": "Money that came back round a cycle",
+      "family": "graph"
+    },
+    {
+      "feature": "g_linked_cases",
+      "label": "Other cases sharing staff with this one",
+      "family": "graph"
+    },
+    {
+      "feature": "s_log_latency",
+      "label": "Access-to-money latency",
+      "family": "sequence"
+    },
+    {
+      "feature": "s_grammar",
+      "label": "Insider hop grammar completed",
+      "family": "sequence"
+    },
+    {
+      "feature": "s_hops",
+      "label": "Hops in the longest chain",
+      "family": "sequence"
+    },
+    {
+      "feature": "s_min_hop_gap",
+      "label": "Shortest gap between hops",
+      "family": "sequence"
+    },
+    {
+      "feature": "s_span",
+      "label": "Time from first to last event",
+      "family": "sequence"
+    },
+    {
+      "feature": "s_burstiness",
+      "label": "Burstiness of event timing",
+      "family": "sequence"
+    },
+    {
+      "feature": "s_night_share",
+      "label": "Events between 20:00 and 06:00",
+      "family": "sequence"
+    },
+    {
+      "feature": "s_change_to_payee",
+      "label": "Contact change \u2192 new payee within 30 min",
+      "family": "sequence"
+    },
+    {
+      "feature": "s_balance_moved",
+      "label": "Share of balance moved out",
+      "family": "sequence"
+    },
+    {
+      "feature": "s_grant_to_use_days",
+      "label": "Days from entitlement grant to use",
+      "family": "sequence"
+    },
+    {
+      "feature": "e_rule_detectors",
+      "label": "Distinct rule detectors",
+      "family": "evidence"
+    },
+    {
+      "feature": "e_graph_detectors",
+      "label": "Distinct graph detectors",
+      "family": "evidence"
+    },
+    {
+      "feature": "e_behaviour",
+      "label": "Behavioural detectors (rhythm, navigation)",
+      "family": "evidence"
+    },
+    {
+      "feature": "e_alibi_unexplained",
+      "label": "Staff accesses Alibi could not explain",
+      "family": "evidence"
+    },
+    {
+      "feature": "e_off_roster",
+      "label": "Staff accesses outside any roster",
+      "family": "evidence"
+    },
+    {
+      "feature": "e_record_systems",
+      "label": "Independent record systems in the evidence",
+      "family": "evidence"
+    },
+    {
+      "feature": "e_max_strength",
+      "label": "Strongest single signal",
+      "family": "evidence"
+    }
+  ],
+  "metrics": {
+    "roc_auc_oof": 1.0,
+    "pr_auc_oof": 1.0,
+    "brier_oof": 0.0007,
+    "precision_oof": 1.0,
+    "recall_oof": 0.991,
+    "f1_oof": 0.996,
+    "threshold": 0.5371,
+    "positives": 113,
+    "negatives": 1659,
+    "lookalikes": 545,
+    "folds": 5,
+    "groups": 1600,
+    "top_feature_share": 0.269,
+    "top_feature": "e_max_strength",
+    "note": "Synthetic Kestrel-Sim worlds. Not real-bank accuracy."
+  },
+  "ablation": {
+    "M7-structure": {
+      "roc_auc_oof": 0.997,
+      "pr_auc_oof": 0.98,
+      "brier_oof": 0.0047,
+      "precision_oof": 0.965,
+      "recall_oof": 0.965,
+      "f1_oof": 0.965,
+      "threshold": 0.2893,
+      "positives": 113,
+      "negatives": 1659,
+      "lookalikes": 545,
+      "folds": 5,
+      "groups": 1600,
+      "top_feature_share": 0.282,
+      "top_feature": "g_max_pass_through",
+      "note": "Synthetic Kestrel-Sim worlds. Not real-bank accuracy."
+    }
+  },
+  "importance": [
+    {
+      "feature": "e_max_strength",
+      "label": "Strongest single signal",
+      "family": "evidence",
+      "share": 0.2546
+    },
+    {
+      "feature": "e_rule_detectors",
+      "label": "Distinct rule detectors",
+      "family": "evidence",
+      "share": 0.1158
+    },
+    {
+      "feature": "s_hops",
+      "label": "Hops in the longest chain",
+      "family": "sequence",
+      "share": 0.0996
+    },
+    {
+      "feature": "e_alibi_unexplained",
+      "label": "Staff accesses Alibi could not explain",
+      "family": "evidence",
+      "share": 0.0977
+    },
+    {
+      "feature": "g_max_pass_through",
+      "label": "Inflow forwarded within 60 min",
+      "family": "graph",
+      "share": 0.0835
+    },
+    {
+      "feature": "g_cash_out",
+      "label": "Share cashed out at ATMs",
+      "family": "graph",
+      "share": 0.0638
+    },
+    {
+      "feature": "s_min_hop_gap",
+      "label": "Shortest gap between hops",
+      "family": "sequence",
+      "share": 0.0524
+    },
+    {
+      "feature": "s_burstiness",
+      "label": "Burstiness of event timing",
+      "family": "sequence",
+      "share": 0.0467
+    },
+    {
+      "feature": "g_presenceless_share",
+      "label": "New accounts opened without the customer present",
+      "family": "graph",
+      "share": 0.0431
+    },
+    {
+      "feature": "s_log_latency",
+      "label": "Access-to-money latency",
+      "family": "sequence",
+      "share": 0.0299
+    },
+    {
+      "feature": "g_accounts",
+      "label": "Bank accounts in the case",
+      "family": "graph",
+      "share": 0.028
+    },
+    {
+      "feature": "s_grammar",
+      "label": "Insider hop grammar completed",
+      "family": "sequence",
+      "share": 0.0232
+    },
+    {
+      "feature": "g_linked_cases",
+      "label": "Other cases sharing staff with this one",
+      "family": "graph",
+      "share": 0.0142
+    },
+    {
+      "feature": "g_employees",
+      "label": "Staff involved",
+      "family": "graph",
+      "share": 0.0111
+    },
+    {
+      "feature": "s_span",
+      "label": "Time from first to last event",
+      "family": "sequence",
+      "share": 0.0068
+    },
+    {
+      "feature": "g_cycle_retention",
+      "label": "Money that came back round a cycle",
+      "family": "graph",
+      "share": 0.0062
+    },
+    {
+      "feature": "g_customers",
+      "label": "Customers in the case",
+      "family": "graph",
+      "share": 0.0058
+    },
+    {
+      "feature": "g_new_account_share",
+      "label": "Accounts opened in the last 90 days",
+      "family": "graph",
+      "share": 0.0056
+    },
+    {
+      "feature": "g_max_fan_in",
+      "label": "Most distinct senders into one account",
+      "family": "graph",
+      "share": 0.0048
+    },
+    {
+      "feature": "e_record_systems",
+      "label": "Independent record systems in the evidence",
+      "family": "evidence",
+      "share": 0.0018
+    },
+    {
+      "feature": "g_shared_identifier",
+      "label": "Accounts sharing a device or phone with other customers",
+      "family": "graph",
+      "share": 0.0014
+    },
+    {
+      "feature": "g_self_approved_share",
+      "label": "Accounts whose opener approved their own KYC",
+      "family": "graph",
+      "share": 0.0012
+    },
+    {
+      "feature": "s_change_to_payee",
+      "label": "Contact change \u2192 new payee within 30 min",
+      "family": "sequence",
+      "share": 0.0007
+    },
+    {
+      "feature": "e_graph_detectors",
+      "label": "Distinct graph detectors",
+      "family": "evidence",
+      "share": 0.0007
+    },
+    {
+      "feature": "g_devices",
+      "label": "Devices involved",
+      "family": "graph",
+      "share": 0.0005
+    },
+    {
+      "feature": "s_night_share",
+      "label": "Events between 20:00 and 06:00",
+      "family": "sequence",
+      "share": 0.0004
+    },
+    {
+      "feature": "s_balance_moved",
+      "label": "Share of balance moved out",
+      "family": "sequence",
+      "share": 0.0004
+    },
+    {
+      "feature": "g_external_share",
+      "label": "Share of counterparties at other banks",
+      "family": "graph",
+      "share": 0.0001
+    },
+    {
+      "feature": "g_opener_concentration",
+      "label": "New accounts opened by one employee",
+      "family": "graph",
+      "share": 0.0
+    },
+    {
+      "feature": "s_grant_to_use_days",
+      "label": "Days from entitlement grant to use",
+      "family": "sequence",
+      "share": 0.0
+    },
+    {
+      "feature": "e_behaviour",
+      "label": "Behavioural detectors (rhythm, navigation)",
+      "family": "evidence",
+      "share": 0.0
+    },
+    {
+      "feature": "e_off_roster",
+      "label": "Staff accesses outside any roster",
+      "family": "evidence",
+      "share": 0.0
+    }
+  ],
+  "families": {
+    "evidence": 0.4706,
+    "sequence": 0.2601,
+    "graph": 0.2693
+  },
+  "train_seeds": [
+    7,
+    8,
+    9,
+    10
+  ],
+  "cv": "StratifiedGroupKFold: a group is every case, chain and account that ground truth ties together (one ring, or rings that share accounts). No group appears in two folds.",
+  "use": "Orders the queue inside each priority band and is shown as a suspicion score. It never sets P1, never closes a case and is never a determination \u2014 that stays with four-eyes review.",
+  "libraries": {
+    "python": "3.12.14",
+    "numpy": "2.5.3",
+    "scikit-learn": "1.9.1",
+    "lightgbm": "4.7.0"
+  }
+}

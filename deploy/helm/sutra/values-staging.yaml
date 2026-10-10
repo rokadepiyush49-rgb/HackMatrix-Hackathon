@@ -1,0 +1,10 @@
+global: { env: staging }
+api:
+  replicas: 2
+  autoscaling: { minReplicas: 2, maxReplicas: 4 }
+web:
+  autoscaling: { minReplicas: 2, maxReplicas: 3 }
+  demoMode: true                # staging keeps demo personas for walkthroughs; prod never does
+detection: { schedule: "0 * * * *" }
+config: { evidenceRetentionDays: 1, evidenceLockMode: GOVERNANCE, llmEnabled: true }   # synthetic data only in staging
+ingress: { host: staging.sutra.example.in }

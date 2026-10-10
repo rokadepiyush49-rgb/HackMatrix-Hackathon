@@ -1,0 +1,262 @@
+{
+  "baselines": {
+    "RB-1": {
+      "version": "1.0",
+      "rule": "alert when any clause holds",
+      "clauses": [
+        {
+          "code": "C1",
+          "typology": "Account takeover",
+          "text": "R4 \u2014 a mobile, password or e-mail change, then a new payee paid within 24 h"
+        },
+        {
+          "code": "C2",
+          "typology": "Insider misuse",
+          "text": "R7 override use and R6 access with no purpose on the same account, or R9 an entitlement used after its intended expiry"
+        },
+        {
+          "code": "C3",
+          "typology": "Mule network",
+          "text": "G4 mule factory, or G2 rapid pass-through and R10 presence-less opening on the same account"
+        },
+        {
+          "code": "C4",
+          "typology": "Structuring",
+          "text": "R1 cash structuring spread across at least 2 branches"
+        },
+        {
+          "code": "C5",
+          "typology": "Layering",
+          "text": "G1 time-respecting cycle that returns 70\u2013110% of the first hop"
+        },
+        {
+          "code": "C6",
+          "typology": "Dormant takeover",
+          "text": "R3 debit from a dormant account and R2 limit-hugging transfers from the same account"
+        }
+      ]
+    },
+    "RB-2": {
+      "version": "1.0",
+      "rule": "alert when any chain in the case reaches P1\u2013P3 on SUTRA's priority lattice with every model input switched off"
+    }
+  },
+  "results": [
+    {
+      "test_set": "cv",
+      "method": "RB-1",
+      "label": "Rule baseline RB-1",
+      "alerts": 220,
+      "tp": 99,
+      "fp": 121,
+      "fn": 14,
+      "lookalike_alerts": 96,
+      "alerts_per_1k_accounts": 11.59,
+      "precision": {
+        "value": 0.45,
+        "lo": 0.346,
+        "hi": 0.567
+      },
+      "recall": {
+        "value": 0.876,
+        "lo": 0.823,
+        "hi": 0.945
+      },
+      "f1": {
+        "value": 0.595,
+        "lo": 0.497,
+        "hi": 0.689
+      },
+      "pr_auc": {
+        "value": 0.631,
+        "lo": 0.567,
+        "hi": 0.711
+      },
+      "lookalike_fp_rate": {
+        "value": 0.176,
+        "lo": 0.104,
+        "hi": 0.256
+      }
+    },
+    {
+      "test_set": "cv",
+      "method": "RB-2",
+      "label": "SUTRA lattice, rules only (RB-2)",
+      "alerts": 250,
+      "tp": 84,
+      "fp": 166,
+      "fn": 29,
+      "lookalike_alerts": 12,
+      "alerts_per_1k_accounts": 13.17,
+      "precision": {
+        "value": 0.336,
+        "lo": 0.279,
+        "hi": 0.392
+      },
+      "recall": {
+        "value": 0.743,
+        "lo": 0.628,
+        "hi": 0.884
+      },
+      "f1": {
+        "value": 0.463,
+        "lo": 0.403,
+        "hi": 0.52
+      },
+      "pr_auc": {
+        "value": 0.76,
+        "lo": 0.657,
+        "hi": 0.89
+      },
+      "lookalike_fp_rate": {
+        "value": 0.022,
+        "lo": 0.011,
+        "hi": 0.036
+      }
+    },
+    {
+      "test_set": "heldout",
+      "method": "RB-1",
+      "label": "Rule baseline RB-1",
+      "alerts": 71,
+      "tp": 30,
+      "fp": 41,
+      "fn": 3,
+      "lookalike_alerts": 27,
+      "alerts_per_1k_accounts": 7.66,
+      "precision": {
+        "value": 0.423,
+        "lo": 0.275,
+        "hi": 0.603
+      },
+      "recall": {
+        "value": 0.909,
+        "lo": 0.816,
+        "hi": 1.0
+      },
+      "f1": {
+        "value": 0.577,
+        "lo": 0.427,
+        "hi": 0.719
+      },
+      "pr_auc": {
+        "value": 0.616,
+        "lo": 0.487,
+        "hi": 0.769
+      },
+      "lookalike_fp_rate": {
+        "value": 0.163,
+        "lo": 0.068,
+        "hi": 0.272
+      }
+    },
+    {
+      "test_set": "heldout",
+      "method": "RB-2",
+      "label": "SUTRA lattice, rules only (RB-2)",
+      "alerts": 106,
+      "tp": 25,
+      "fp": 81,
+      "fn": 8,
+      "lookalike_alerts": 7,
+      "alerts_per_1k_accounts": 11.44,
+      "precision": {
+        "value": 0.236,
+        "lo": 0.155,
+        "hi": 0.32
+      },
+      "recall": {
+        "value": 0.758,
+        "lo": 0.564,
+        "hi": 1.0
+      },
+      "f1": {
+        "value": 0.36,
+        "lo": 0.258,
+        "hi": 0.449
+      },
+      "pr_auc": {
+        "value": 0.763,
+        "lo": 0.585,
+        "hi": 1.0
+      },
+      "lookalike_fp_rate": {
+        "value": 0.042,
+        "lo": 0.014,
+        "hi": 0.069
+      }
+    },
+    {
+      "test_set": "later",
+      "method": "RB-1",
+      "label": "Rule baseline RB-1",
+      "alerts": 32,
+      "tp": 21,
+      "fp": 11,
+      "fn": 0,
+      "lookalike_alerts": 8,
+      "alerts_per_1k_accounts": 3.45,
+      "precision": {
+        "value": 0.656,
+        "lo": 0.486,
+        "hi": 0.828
+      },
+      "recall": {
+        "value": 1.0,
+        "lo": 1.0,
+        "hi": 1.0
+      },
+      "f1": {
+        "value": 0.792,
+        "lo": 0.655,
+        "hi": 0.906
+      },
+      "pr_auc": {
+        "value": 0.853,
+        "lo": 0.732,
+        "hi": 0.945
+      },
+      "lookalike_fp_rate": {
+        "value": 0.186,
+        "lo": 0.053,
+        "hi": 0.34
+      }
+    },
+    {
+      "test_set": "later",
+      "method": "RB-2",
+      "label": "SUTRA lattice, rules only (RB-2)",
+      "alerts": 51,
+      "tp": 19,
+      "fp": 32,
+      "fn": 2,
+      "lookalike_alerts": 4,
+      "alerts_per_1k_accounts": 5.5,
+      "precision": {
+        "value": 0.373,
+        "lo": 0.24,
+        "hi": 0.511
+      },
+      "recall": {
+        "value": 0.905,
+        "lo": 0.774,
+        "hi": 1.0
+      },
+      "f1": {
+        "value": 0.528,
+        "lo": 0.378,
+        "hi": 0.658
+      },
+      "pr_auc": {
+        "value": 0.921,
+        "lo": 0.813,
+        "hi": 1.0
+      },
+      "lookalike_fp_rate": {
+        "value": 0.093,
+        "lo": 0.0,
+        "hi": 0.205
+      }
+    }
+  ]
+}

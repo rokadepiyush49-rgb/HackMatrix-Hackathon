@@ -1,0 +1,1884 @@
+{
+  "generated_at": "2026-10-10T11:48:09.349516+00:00",
+  "note": "Every number is measured on synthetic Kestrel-Sim worlds. None is a claim about real-bank accuracy.",
+  "unit": "Connected case (app.ml.cases). Labels: docs/ml/labeling.md. Features: docs/ml/features.md.",
+  "train_worlds": [
+    "7",
+    "8",
+    "9",
+    "10"
+  ],
+  "heldout_worlds": [
+    "11",
+    "42",
+    "42+feed"
+  ],
+  "later_cutoff": "2026-09-02T00:00:00+05:30",
+  "bootstrap": {
+    "replicates": 1000,
+    "unit": "group",
+    "interval": "95%"
+  },
+  "baselines": {
+    "RB-1": {
+      "version": "1.0",
+      "rule": "alert when any clause holds",
+      "clauses": [
+        {
+          "code": "C1",
+          "typology": "Account takeover",
+          "text": "R4 \u2014 a mobile, password or e-mail change, then a new payee paid within 24 h"
+        },
+        {
+          "code": "C2",
+          "typology": "Insider misuse",
+          "text": "R7 override use and R6 access with no purpose on the same account, or R9 an entitlement used after its intended expiry"
+        },
+        {
+          "code": "C3",
+          "typology": "Mule network",
+          "text": "G4 mule factory, or G2 rapid pass-through and R10 presence-less opening on the same account"
+        },
+        {
+          "code": "C4",
+          "typology": "Structuring",
+          "text": "R1 cash structuring spread across at least 2 branches"
+        },
+        {
+          "code": "C5",
+          "typology": "Layering",
+          "text": "G1 time-respecting cycle that returns 70\u2013110% of the first hop"
+        },
+        {
+          "code": "C6",
+          "typology": "Dormant takeover",
+          "text": "R3 debit from a dormant account and R2 limit-hugging transfers from the same account"
+        }
+      ]
+    },
+    "RB-2": {
+      "version": "1.0",
+      "rule": "alert when any chain in the case reaches P1\u2013P3 on SUTRA's priority lattice with every model input switched off"
+    }
+  },
+  "methods": {
+    "RB-1": "Rule baseline RB-1",
+    "RB-2": "SUTRA lattice, rules only (RB-2)",
+    "M7": "M7 connected-case prioritiser",
+    "M7-structure": "M7 without detector features"
+  },
+  "models": {
+    "M7": {
+      "label": "M7",
+      "threshold": 0.5371,
+      "metrics": {
+        "roc_auc_oof": 1.0,
+        "pr_auc_oof": 1.0,
+        "brier_oof": 0.0007,
+        "precision_oof": 1.0,
+        "recall_oof": 0.991,
+        "f1_oof": 0.996,
+        "threshold": 0.5371,
+        "positives": 113,
+        "negatives": 1659,
+        "lookalikes": 545,
+        "folds": 5,
+        "groups": 1600,
+        "top_feature_share": 0.269,
+        "top_feature": "e_max_strength",
+        "note": "Synthetic Kestrel-Sim worlds. Not real-bank accuracy."
+      },
+      "families": {
+        "evidence": 0.4706,
+        "sequence": 0.2601,
+        "graph": 0.2693
+      },
+      "importance": [
+        {
+          "feature": "e_max_strength",
+          "label": "Strongest single signal",
+          "family": "evidence",
+          "share": 0.2546
+        },
+        {
+          "feature": "e_rule_detectors",
+          "label": "Distinct rule detectors",
+          "family": "evidence",
+          "share": 0.1158
+        },
+        {
+          "feature": "s_hops",
+          "label": "Hops in the longest chain",
+          "family": "sequence",
+          "share": 0.0996
+        },
+        {
+          "feature": "e_alibi_unexplained",
+          "label": "Staff accesses Alibi could not explain",
+          "family": "evidence",
+          "share": 0.0977
+        },
+        {
+          "feature": "g_max_pass_through",
+          "label": "Inflow forwarded within 60 min",
+          "family": "graph",
+          "share": 0.0835
+        },
+        {
+          "feature": "g_cash_out",
+          "label": "Share cashed out at ATMs",
+          "family": "graph",
+          "share": 0.0638
+        },
+        {
+          "feature": "s_min_hop_gap",
+          "label": "Shortest gap between hops",
+          "family": "sequence",
+          "share": 0.0524
+        },
+        {
+          "feature": "s_burstiness",
+          "label": "Burstiness of event timing",
+          "family": "sequence",
+          "share": 0.0467
+        },
+        {
+          "feature": "g_presenceless_share",
+          "label": "New accounts opened without the customer present",
+          "family": "graph",
+          "share": 0.0431
+        },
+        {
+          "feature": "s_log_latency",
+          "label": "Access-to-money latency",
+          "family": "sequence",
+          "share": 0.0299
+        }
+      ]
+    },
+    "M7-structure": {
+      "label": "M7 without detector features",
+      "threshold": 0.2893,
+      "metrics": {
+        "roc_auc_oof": 0.997,
+        "pr_auc_oof": 0.98,
+        "brier_oof": 0.0047,
+        "precision_oof": 0.965,
+        "recall_oof": 0.965,
+        "f1_oof": 0.965,
+        "threshold": 0.2893,
+        "positives": 113,
+        "negatives": 1659,
+        "lookalikes": 545,
+        "folds": 5,
+        "groups": 1600,
+        "top_feature_share": 0.282,
+        "top_feature": "g_max_pass_through",
+        "note": "Synthetic Kestrel-Sim worlds. Not real-bank accuracy."
+      },
+      "families": {
+        "sequence": 0.4248,
+        "graph": 0.5751
+      },
+      "importance": [
+        {
+          "feature": "s_hops",
+          "label": "Hops in the longest chain",
+          "family": "sequence",
+          "share": 0.1507
+        },
+        {
+          "feature": "g_max_pass_through",
+          "label": "Inflow forwarded within 60 min",
+          "family": "graph",
+          "share": 0.1427
+        },
+        {
+          "feature": "g_employees",
+          "label": "Staff involved",
+          "family": "graph",
+          "share": 0.1187
+        },
+        {
+          "feature": "s_log_latency",
+          "label": "Access-to-money latency",
+          "family": "sequence",
+          "share": 0.0818
+        },
+        {
+          "feature": "g_linked_cases",
+          "label": "Other cases sharing staff with this one",
+          "family": "graph",
+          "share": 0.0791
+        },
+        {
+          "feature": "g_max_fan_in",
+          "label": "Most distinct senders into one account",
+          "family": "graph",
+          "share": 0.0669
+        },
+        {
+          "feature": "s_min_hop_gap",
+          "label": "Shortest gap between hops",
+          "family": "sequence",
+          "share": 0.0665
+        },
+        {
+          "feature": "s_burstiness",
+          "label": "Burstiness of event timing",
+          "family": "sequence",
+          "share": 0.0652
+        },
+        {
+          "feature": "g_presenceless_share",
+          "label": "New accounts opened without the customer present",
+          "family": "graph",
+          "share": 0.0573
+        },
+        {
+          "feature": "g_cash_out",
+          "label": "Share cashed out at ATMs",
+          "family": "graph",
+          "share": 0.0547
+        }
+      ]
+    },
+    "M7-past": {
+      "label": "M7 trained on cases that ended before the cutoff",
+      "threshold": 0.3096,
+      "metrics": {
+        "roc_auc_oof": 1.0,
+        "pr_auc_oof": 0.999,
+        "brier_oof": 0.0008,
+        "precision_oof": 1.0,
+        "recall_oof": 0.98,
+        "f1_oof": 0.99,
+        "threshold": 0.3096,
+        "positives": 51,
+        "negatives": 1345,
+        "lookalikes": 376,
+        "folds": 5,
+        "groups": 1270,
+        "top_feature_share": 0.286,
+        "top_feature": "e_alibi_unexplained",
+        "note": "Synthetic Kestrel-Sim worlds. Not real-bank accuracy."
+      },
+      "families": {
+        "evidence": 0.435,
+        "sequence": 0.3734,
+        "graph": 0.1917
+      },
+      "importance": [
+        {
+          "feature": "e_max_strength",
+          "label": "Strongest single signal",
+          "family": "evidence",
+          "share": 0.1859
+        },
+        {
+          "feature": "s_hops",
+          "label": "Hops in the longest chain",
+          "family": "sequence",
+          "share": 0.1415
+        },
+        {
+          "feature": "e_rule_detectors",
+          "label": "Distinct rule detectors",
+          "family": "evidence",
+          "share": 0.1218
+        },
+        {
+          "feature": "e_alibi_unexplained",
+          "label": "Staff accesses Alibi could not explain",
+          "family": "evidence",
+          "share": 0.1206
+        },
+        {
+          "feature": "s_burstiness",
+          "label": "Burstiness of event timing",
+          "family": "sequence",
+          "share": 0.0748
+        },
+        {
+          "feature": "s_log_latency",
+          "label": "Access-to-money latency",
+          "family": "sequence",
+          "share": 0.064
+        },
+        {
+          "feature": "g_presenceless_share",
+          "label": "New accounts opened without the customer present",
+          "family": "graph",
+          "share": 0.0508
+        },
+        {
+          "feature": "s_span",
+          "label": "Time from first to last event",
+          "family": "sequence",
+          "share": 0.0495
+        },
+        {
+          "feature": "g_cash_out",
+          "label": "Share cashed out at ATMs",
+          "family": "graph",
+          "share": 0.0297
+        },
+        {
+          "feature": "s_min_hop_gap",
+          "label": "Shortest gap between hops",
+          "family": "sequence",
+          "share": 0.0259
+        }
+      ]
+    },
+    "M7-structure-past": {
+      "label": "M7 without detector features, past only",
+      "threshold": 0.3435,
+      "metrics": {
+        "roc_auc_oof": 0.995,
+        "pr_auc_oof": 0.947,
+        "brier_oof": 0.0069,
+        "precision_oof": 0.902,
+        "recall_oof": 0.902,
+        "f1_oof": 0.902,
+        "threshold": 0.3435,
+        "positives": 51,
+        "negatives": 1345,
+        "lookalikes": 376,
+        "folds": 5,
+        "groups": 1270,
+        "top_feature_share": 0.163,
+        "top_feature": "s_hops",
+        "note": "Synthetic Kestrel-Sim worlds. Not real-bank accuracy."
+      },
+      "families": {
+        "graph": 0.6022,
+        "sequence": 0.3979
+      },
+      "importance": [
+        {
+          "feature": "g_employees",
+          "label": "Staff involved",
+          "family": "graph",
+          "share": 0.1564
+        },
+        {
+          "feature": "s_burstiness",
+          "label": "Burstiness of event timing",
+          "family": "sequence",
+          "share": 0.1237
+        },
+        {
+          "feature": "s_hops",
+          "label": "Hops in the longest chain",
+          "family": "sequence",
+          "share": 0.1231
+        },
+        {
+          "feature": "g_max_pass_through",
+          "label": "Inflow forwarded within 60 min",
+          "family": "graph",
+          "share": 0.1091
+        },
+        {
+          "feature": "g_linked_cases",
+          "label": "Other cases sharing staff with this one",
+          "family": "graph",
+          "share": 0.1049
+        },
+        {
+          "feature": "g_max_fan_in",
+          "label": "Most distinct senders into one account",
+          "family": "graph",
+          "share": 0.0879
+        },
+        {
+          "feature": "s_log_latency",
+          "label": "Access-to-money latency",
+          "family": "sequence",
+          "share": 0.0592
+        },
+        {
+          "feature": "g_cash_out",
+          "label": "Share cashed out at ATMs",
+          "family": "graph",
+          "share": 0.0576
+        },
+        {
+          "feature": "g_presenceless_share",
+          "label": "New accounts opened without the customer present",
+          "family": "graph",
+          "share": 0.0489
+        },
+        {
+          "feature": "s_min_hop_gap",
+          "label": "Shortest gap between hops",
+          "family": "sequence",
+          "share": 0.0269
+        }
+      ]
+    }
+  },
+  "feature_labels": {
+    "g_accounts": "Bank accounts in the case",
+    "g_customers": "Customers in the case",
+    "g_employees": "Staff involved",
+    "g_devices": "Devices involved",
+    "g_external_share": "Share of counterparties at other banks",
+    "g_new_account_share": "Accounts opened in the last 90 days",
+    "g_presenceless_share": "New accounts opened without the customer present",
+    "g_self_approved_share": "Accounts whose opener approved their own KYC",
+    "g_opener_concentration": "New accounts opened by one employee",
+    "g_shared_identifier": "Accounts sharing a device or phone with other customers",
+    "g_max_fan_in": "Most distinct senders into one account",
+    "g_max_pass_through": "Inflow forwarded within 60 min",
+    "g_cash_out": "Share cashed out at ATMs",
+    "g_cycle_retention": "Money that came back round a cycle",
+    "g_linked_cases": "Other cases sharing staff with this one",
+    "s_log_latency": "Access-to-money latency",
+    "s_grammar": "Insider hop grammar completed",
+    "s_hops": "Hops in the longest chain",
+    "s_min_hop_gap": "Shortest gap between hops",
+    "s_span": "Time from first to last event",
+    "s_burstiness": "Burstiness of event timing",
+    "s_night_share": "Events between 20:00 and 06:00",
+    "s_change_to_payee": "Contact change \u2192 new payee within 30 min",
+    "s_balance_moved": "Share of balance moved out",
+    "s_grant_to_use_days": "Days from entitlement grant to use",
+    "e_rule_detectors": "Distinct rule detectors",
+    "e_graph_detectors": "Distinct graph detectors",
+    "e_behaviour": "Behavioural detectors (rhythm, navigation)",
+    "e_alibi_unexplained": "Staff accesses Alibi could not explain",
+    "e_off_roster": "Staff accesses outside any roster",
+    "e_record_systems": "Independent record systems in the evidence",
+    "e_max_strength": "Strongest single signal"
+  },
+  "model_card": {
+    "model": "M7 connected-case prioritiser",
+    "algorithm": "LightGBM (300 trees, 15 leaves) with TreeSHAP; Platt calibration on grouped out-of-fold scores; operating threshold maximises out-of-fold F1",
+    "unit": "Connected case (app.ml.cases): chains and seeding signals joined by shared accounts, customers, devices or counterparties \u2014 never by staff",
+    "label": "1 when the case touches a suspicious scenario instance (docs/ml/labeling.md)",
+    "features": [
+      {
+        "feature": "g_accounts",
+        "label": "Bank accounts in the case",
+        "family": "graph"
+      },
+      {
+        "feature": "g_customers",
+        "label": "Customers in the case",
+        "family": "graph"
+      },
+      {
+        "feature": "g_employees",
+        "label": "Staff involved",
+        "family": "graph"
+      },
+      {
+        "feature": "g_devices",
+        "label": "Devices involved",
+        "family": "graph"
+      },
+      {
+        "feature": "g_external_share",
+        "label": "Share of counterparties at other banks",
+        "family": "graph"
+      },
+      {
+        "feature": "g_new_account_share",
+        "label": "Accounts opened in the last 90 days",
+        "family": "graph"
+      },
+      {
+        "feature": "g_presenceless_share",
+        "label": "New accounts opened without the customer present",
+        "family": "graph"
+      },
+      {
+        "feature": "g_self_approved_share",
+        "label": "Accounts whose opener approved their own KYC",
+        "family": "graph"
+      },
+      {
+        "feature": "g_opener_concentration",
+        "label": "New accounts opened by one employee",
+        "family": "graph"
+      },
+      {
+        "feature": "g_shared_identifier",
+        "label": "Accounts sharing a device or phone with other customers",
+        "family": "graph"
+      },
+      {
+        "feature": "g_max_fan_in",
+        "label": "Most distinct senders into one account",
+        "family": "graph"
+      },
+      {
+        "feature": "g_max_pass_through",
+        "label": "Inflow forwarded within 60 min",
+        "family": "graph"
+      },
+      {
+        "feature": "g_cash_out",
+        "label": "Share cashed out at ATMs",
+        "family": "graph"
+      },
+      {
+        "feature": "g_cycle_retention",
+        "label": "Money that came back round a cycle",
+        "family": "graph"
+      },
+      {
+        "feature": "g_linked_cases",
+        "label": "Other cases sharing staff with this one",
+        "family": "graph"
+      },
+      {
+        "feature": "s_log_latency",
+        "label": "Access-to-money latency",
+        "family": "sequence"
+      },
+      {
+        "feature": "s_grammar",
+        "label": "Insider hop grammar completed",
+        "family": "sequence"
+      },
+      {
+        "feature": "s_hops",
+        "label": "Hops in the longest chain",
+        "family": "sequence"
+      },
+      {
+        "feature": "s_min_hop_gap",
+        "label": "Shortest gap between hops",
+        "family": "sequence"
+      },
+      {
+        "feature": "s_span",
+        "label": "Time from first to last event",
+        "family": "sequence"
+      },
+      {
+        "feature": "s_burstiness",
+        "label": "Burstiness of event timing",
+        "family": "sequence"
+      },
+      {
+        "feature": "s_night_share",
+        "label": "Events between 20:00 and 06:00",
+        "family": "sequence"
+      },
+      {
+        "feature": "s_change_to_payee",
+        "label": "Contact change \u2192 new payee within 30 min",
+        "family": "sequence"
+      },
+      {
+        "feature": "s_balance_moved",
+        "label": "Share of balance moved out",
+        "family": "sequence"
+      },
+      {
+        "feature": "s_grant_to_use_days",
+        "label": "Days from entitlement grant to use",
+        "family": "sequence"
+      },
+      {
+        "feature": "e_rule_detectors",
+        "label": "Distinct rule detectors",
+        "family": "evidence"
+      },
+      {
+        "feature": "e_graph_detectors",
+        "label": "Distinct graph detectors",
+        "family": "evidence"
+      },
+      {
+        "feature": "e_behaviour",
+        "label": "Behavioural detectors (rhythm, navigation)",
+        "family": "evidence"
+      },
+      {
+        "feature": "e_alibi_unexplained",
+        "label": "Staff accesses Alibi could not explain",
+        "family": "evidence"
+      },
+      {
+        "feature": "e_off_roster",
+        "label": "Staff accesses outside any roster",
+        "family": "evidence"
+      },
+      {
+        "feature": "e_record_systems",
+        "label": "Independent record systems in the evidence",
+        "family": "evidence"
+      },
+      {
+        "feature": "e_max_strength",
+        "label": "Strongest single signal",
+        "family": "evidence"
+      }
+    ],
+    "metrics": {
+      "roc_auc_oof": 1.0,
+      "pr_auc_oof": 1.0,
+      "brier_oof": 0.0007,
+      "precision_oof": 1.0,
+      "recall_oof": 0.991,
+      "f1_oof": 0.996,
+      "threshold": 0.5371,
+      "positives": 113,
+      "negatives": 1659,
+      "lookalikes": 545,
+      "folds": 5,
+      "groups": 1600,
+      "top_feature_share": 0.269,
+      "top_feature": "e_max_strength",
+      "note": "Synthetic Kestrel-Sim worlds. Not real-bank accuracy."
+    },
+    "ablation": {
+      "M7-structure": {
+        "roc_auc_oof": 0.997,
+        "pr_auc_oof": 0.98,
+        "brier_oof": 0.0047,
+        "precision_oof": 0.965,
+        "recall_oof": 0.965,
+        "f1_oof": 0.965,
+        "threshold": 0.2893,
+        "positives": 113,
+        "negatives": 1659,
+        "lookalikes": 545,
+        "folds": 5,
+        "groups": 1600,
+        "top_feature_share": 0.282,
+        "top_feature": "g_max_pass_through",
+        "note": "Synthetic Kestrel-Sim worlds. Not real-bank accuracy."
+      }
+    },
+    "importance": [
+      {
+        "feature": "e_max_strength",
+        "label": "Strongest single signal",
+        "family": "evidence",
+        "share": 0.2546
+      },
+      {
+        "feature": "e_rule_detectors",
+        "label": "Distinct rule detectors",
+        "family": "evidence",
+        "share": 0.1158
+      },
+      {
+        "feature": "s_hops",
+        "label": "Hops in the longest chain",
+        "family": "sequence",
+        "share": 0.0996
+      },
+      {
+        "feature": "e_alibi_unexplained",
+        "label": "Staff accesses Alibi could not explain",
+        "family": "evidence",
+        "share": 0.0977
+      },
+      {
+        "feature": "g_max_pass_through",
+        "label": "Inflow forwarded within 60 min",
+        "family": "graph",
+        "share": 0.0835
+      },
+      {
+        "feature": "g_cash_out",
+        "label": "Share cashed out at ATMs",
+        "family": "graph",
+        "share": 0.0638
+      },
+      {
+        "feature": "s_min_hop_gap",
+        "label": "Shortest gap between hops",
+        "family": "sequence",
+        "share": 0.0524
+      },
+      {
+        "feature": "s_burstiness",
+        "label": "Burstiness of event timing",
+        "family": "sequence",
+        "share": 0.0467
+      },
+      {
+        "feature": "g_presenceless_share",
+        "label": "New accounts opened without the customer present",
+        "family": "graph",
+        "share": 0.0431
+      },
+      {
+        "feature": "s_log_latency",
+        "label": "Access-to-money latency",
+        "family": "sequence",
+        "share": 0.0299
+      },
+      {
+        "feature": "g_accounts",
+        "label": "Bank accounts in the case",
+        "family": "graph",
+        "share": 0.028
+      },
+      {
+        "feature": "s_grammar",
+        "label": "Insider hop grammar completed",
+        "family": "sequence",
+        "share": 0.0232
+      },
+      {
+        "feature": "g_linked_cases",
+        "label": "Other cases sharing staff with this one",
+        "family": "graph",
+        "share": 0.0142
+      },
+      {
+        "feature": "g_employees",
+        "label": "Staff involved",
+        "family": "graph",
+        "share": 0.0111
+      },
+      {
+        "feature": "s_span",
+        "label": "Time from first to last event",
+        "family": "sequence",
+        "share": 0.0068
+      },
+      {
+        "feature": "g_cycle_retention",
+        "label": "Money that came back round a cycle",
+        "family": "graph",
+        "share": 0.0062
+      },
+      {
+        "feature": "g_customers",
+        "label": "Customers in the case",
+        "family": "graph",
+        "share": 0.0058
+      },
+      {
+        "feature": "g_new_account_share",
+        "label": "Accounts opened in the last 90 days",
+        "family": "graph",
+        "share": 0.0056
+      },
+      {
+        "feature": "g_max_fan_in",
+        "label": "Most distinct senders into one account",
+        "family": "graph",
+        "share": 0.0048
+      },
+      {
+        "feature": "e_record_systems",
+        "label": "Independent record systems in the evidence",
+        "family": "evidence",
+        "share": 0.0018
+      },
+      {
+        "feature": "g_shared_identifier",
+        "label": "Accounts sharing a device or phone with other customers",
+        "family": "graph",
+        "share": 0.0014
+      },
+      {
+        "feature": "g_self_approved_share",
+        "label": "Accounts whose opener approved their own KYC",
+        "family": "graph",
+        "share": 0.0012
+      },
+      {
+        "feature": "s_change_to_payee",
+        "label": "Contact change \u2192 new payee within 30 min",
+        "family": "sequence",
+        "share": 0.0007
+      },
+      {
+        "feature": "e_graph_detectors",
+        "label": "Distinct graph detectors",
+        "family": "evidence",
+        "share": 0.0007
+      },
+      {
+        "feature": "g_devices",
+        "label": "Devices involved",
+        "family": "graph",
+        "share": 0.0005
+      },
+      {
+        "feature": "s_night_share",
+        "label": "Events between 20:00 and 06:00",
+        "family": "sequence",
+        "share": 0.0004
+      },
+      {
+        "feature": "s_balance_moved",
+        "label": "Share of balance moved out",
+        "family": "sequence",
+        "share": 0.0004
+      },
+      {
+        "feature": "g_external_share",
+        "label": "Share of counterparties at other banks",
+        "family": "graph",
+        "share": 0.0001
+      },
+      {
+        "feature": "g_opener_concentration",
+        "label": "New accounts opened by one employee",
+        "family": "graph",
+        "share": 0.0
+      },
+      {
+        "feature": "s_grant_to_use_days",
+        "label": "Days from entitlement grant to use",
+        "family": "sequence",
+        "share": 0.0
+      },
+      {
+        "feature": "e_behaviour",
+        "label": "Behavioural detectors (rhythm, navigation)",
+        "family": "evidence",
+        "share": 0.0
+      },
+      {
+        "feature": "e_off_roster",
+        "label": "Staff accesses outside any roster",
+        "family": "evidence",
+        "share": 0.0
+      }
+    ],
+    "families": {
+      "evidence": 0.4706,
+      "sequence": 0.2601,
+      "graph": 0.2693
+    },
+    "train_seeds": [
+      7,
+      8,
+      9,
+      10
+    ],
+    "cv": "StratifiedGroupKFold: a group is every case, chain and account that ground truth ties together (one ring, or rings that share accounts). No group appears in two folds.",
+    "use": "Orders the queue inside each priority band and is shown as a suspicion score. It never sets P1, never closes a case and is never a determination \u2014 that stays with four-eyes review.",
+    "libraries": {
+      "python": "3.12.14",
+      "numpy": "2.5.3",
+      "scikit-learn": "1.9.1",
+      "lightgbm": "4.7.0"
+    }
+  },
+  "test_sets": [
+    {
+      "key": "cv",
+      "title": "Unseen connected cases \u2014 grouped 5-fold out-of-fold, training worlds 7\u201310",
+      "worlds": [
+        "7",
+        "8",
+        "9",
+        "10"
+      ],
+      "cases": 1772,
+      "positives": 113,
+      "lookalikes": 545,
+      "background": 1114,
+      "accounts": 18982,
+      "rows": [
+        {
+          "method": "RB-1",
+          "label": "Rule baseline RB-1",
+          "alerts": 220,
+          "tp": 99,
+          "fp": 121,
+          "fn": 14,
+          "lookalike_alerts": 96,
+          "alerts_per_1k_accounts": 11.59,
+          "precision": {
+            "value": 0.45,
+            "lo": 0.346,
+            "hi": 0.567
+          },
+          "recall": {
+            "value": 0.876,
+            "lo": 0.823,
+            "hi": 0.945
+          },
+          "f1": {
+            "value": 0.595,
+            "lo": 0.497,
+            "hi": 0.689
+          },
+          "pr_auc": {
+            "value": 0.631,
+            "lo": 0.567,
+            "hi": 0.711
+          },
+          "lookalike_fp_rate": {
+            "value": 0.176,
+            "lo": 0.104,
+            "hi": 0.256
+          }
+        },
+        {
+          "method": "RB-2",
+          "label": "SUTRA lattice, rules only (RB-2)",
+          "alerts": 250,
+          "tp": 84,
+          "fp": 166,
+          "fn": 29,
+          "lookalike_alerts": 12,
+          "alerts_per_1k_accounts": 13.17,
+          "precision": {
+            "value": 0.336,
+            "lo": 0.279,
+            "hi": 0.392
+          },
+          "recall": {
+            "value": 0.743,
+            "lo": 0.628,
+            "hi": 0.884
+          },
+          "f1": {
+            "value": 0.463,
+            "lo": 0.403,
+            "hi": 0.52
+          },
+          "pr_auc": {
+            "value": 0.76,
+            "lo": 0.657,
+            "hi": 0.89
+          },
+          "lookalike_fp_rate": {
+            "value": 0.022,
+            "lo": 0.011,
+            "hi": 0.036
+          }
+        },
+        {
+          "method": "M7",
+          "label": "M7 connected-case prioritiser",
+          "alerts": 112,
+          "tp": 112,
+          "fp": 0,
+          "fn": 1,
+          "lookalike_alerts": 0,
+          "alerts_per_1k_accounts": 5.9,
+          "precision": {
+            "value": 1.0,
+            "lo": 1.0,
+            "hi": 1.0
+          },
+          "recall": {
+            "value": 0.991,
+            "lo": 0.971,
+            "hi": 1.0
+          },
+          "f1": {
+            "value": 0.996,
+            "lo": 0.985,
+            "hi": 1.0
+          },
+          "pr_auc": {
+            "value": 1.0,
+            "lo": 0.999,
+            "hi": 1.0
+          },
+          "lookalike_fp_rate": {
+            "value": 0.0,
+            "lo": 0.0,
+            "hi": 0.0
+          },
+          "threshold": 0.5371,
+          "at_rb1_budget": {
+            "k": 220,
+            "tp": 113,
+            "precision": 0.514,
+            "recall": 1.0
+          }
+        },
+        {
+          "method": "M7-structure",
+          "label": "M7 without detector features",
+          "alerts": 113,
+          "tp": 109,
+          "fp": 4,
+          "fn": 4,
+          "lookalike_alerts": 4,
+          "alerts_per_1k_accounts": 5.95,
+          "precision": {
+            "value": 0.965,
+            "lo": 0.925,
+            "hi": 0.992
+          },
+          "recall": {
+            "value": 0.965,
+            "lo": 0.931,
+            "hi": 0.992
+          },
+          "f1": {
+            "value": 0.965,
+            "lo": 0.938,
+            "hi": 0.986
+          },
+          "pr_auc": {
+            "value": 0.98,
+            "lo": 0.958,
+            "hi": 0.995
+          },
+          "lookalike_fp_rate": {
+            "value": 0.007,
+            "lo": 0.002,
+            "hi": 0.015
+          },
+          "threshold": 0.2893,
+          "at_rb1_budget": {
+            "k": 220,
+            "tp": 110,
+            "precision": 0.5,
+            "recall": 0.973
+          }
+        }
+      ],
+      "by_typology": [
+        {
+          "typology": "CIRCULAR_FLOW",
+          "cases": 12,
+          "recall": {
+            "RB-1": 1.0,
+            "RB-2": 1.0,
+            "M7": 0.917,
+            "M7-structure": 1.0
+          }
+        },
+        {
+          "typology": "EXTERNAL_ATO",
+          "cases": 18,
+          "recall": {
+            "RB-1": 1.0,
+            "RB-2": 1.0,
+            "M7": 1.0,
+            "M7-structure": 1.0
+          }
+        },
+        {
+          "typology": "EXTERNAL_ATO+INSIDER_ATO+MULE_FACTORY",
+          "cases": 1,
+          "recall": {
+            "RB-1": 1.0,
+            "RB-2": 1.0,
+            "M7": 1.0,
+            "M7-structure": 1.0
+          }
+        },
+        {
+          "typology": "INSIDER_ATO+MULE_FACTORY",
+          "cases": 44,
+          "recall": {
+            "RB-1": 1.0,
+            "RB-2": 1.0,
+            "M7": 1.0,
+            "M7-structure": 1.0
+          }
+        },
+        {
+          "typology": "MULE_FACTORY",
+          "cases": 29,
+          "recall": {
+            "RB-1": 0.517,
+            "RB-2": 0.0,
+            "M7": 1.0,
+            "M7-structure": 0.897
+          }
+        },
+        {
+          "typology": "STRUCTURING",
+          "cases": 9,
+          "recall": {
+            "RB-1": 1.0,
+            "RB-2": 1.0,
+            "M7": 1.0,
+            "M7-structure": 0.889
+          }
+        }
+      ],
+      "lookalikes_by_type": [
+        {
+          "type": "HOUSEHOLD",
+          "cases": 190,
+          "alerted": {
+            "RB-1": 1,
+            "RB-2": 2,
+            "M7": 0,
+            "M7-structure": 1
+          }
+        },
+        {
+          "type": "S2",
+          "cases": 12,
+          "alerted": {
+            "RB-1": 12,
+            "RB-2": 0,
+            "M7": 0,
+            "M7-structure": 0
+          }
+        },
+        {
+          "type": "S4",
+          "cases": 83,
+          "alerted": {
+            "RB-1": 82,
+            "RB-2": 6,
+            "M7": 0,
+            "M7-structure": 0
+          }
+        },
+        {
+          "type": "SINGLE_OFFICER",
+          "cases": 71,
+          "alerted": {
+            "RB-1": 0,
+            "RB-2": 0,
+            "M7": 0,
+            "M7-structure": 0
+          }
+        },
+        {
+          "type": "VIDEO_KYC",
+          "cases": 210,
+          "alerted": {
+            "RB-1": 2,
+            "RB-2": 5,
+            "M7": 0,
+            "M7-structure": 3
+          }
+        }
+      ],
+      "note": "Out-of-fold scores; the operating threshold was chosen on these same scores, so this set is slightly optimistic for M7. The held-out and later sets use that threshold frozen."
+    },
+    {
+      "key": "heldout",
+      "title": "Unseen accounts and connected cases \u2014 held-out worlds 11 and 42",
+      "worlds": [
+        "11",
+        "42"
+      ],
+      "cases": 707,
+      "positives": 33,
+      "lookalikes": 166,
+      "background": 508,
+      "accounts": 9268,
+      "rows": [
+        {
+          "method": "RB-1",
+          "label": "Rule baseline RB-1",
+          "alerts": 71,
+          "tp": 30,
+          "fp": 41,
+          "fn": 3,
+          "lookalike_alerts": 27,
+          "alerts_per_1k_accounts": 7.66,
+          "precision": {
+            "value": 0.423,
+            "lo": 0.275,
+            "hi": 0.603
+          },
+          "recall": {
+            "value": 0.909,
+            "lo": 0.816,
+            "hi": 1.0
+          },
+          "f1": {
+            "value": 0.577,
+            "lo": 0.427,
+            "hi": 0.719
+          },
+          "pr_auc": {
+            "value": 0.616,
+            "lo": 0.487,
+            "hi": 0.769
+          },
+          "lookalike_fp_rate": {
+            "value": 0.163,
+            "lo": 0.068,
+            "hi": 0.272
+          }
+        },
+        {
+          "method": "RB-2",
+          "label": "SUTRA lattice, rules only (RB-2)",
+          "alerts": 106,
+          "tp": 25,
+          "fp": 81,
+          "fn": 8,
+          "lookalike_alerts": 7,
+          "alerts_per_1k_accounts": 11.44,
+          "precision": {
+            "value": 0.236,
+            "lo": 0.155,
+            "hi": 0.32
+          },
+          "recall": {
+            "value": 0.758,
+            "lo": 0.564,
+            "hi": 1.0
+          },
+          "f1": {
+            "value": 0.36,
+            "lo": 0.258,
+            "hi": 0.449
+          },
+          "pr_auc": {
+            "value": 0.763,
+            "lo": 0.585,
+            "hi": 1.0
+          },
+          "lookalike_fp_rate": {
+            "value": 0.042,
+            "lo": 0.014,
+            "hi": 0.069
+          }
+        },
+        {
+          "method": "M7",
+          "label": "M7 connected-case prioritiser",
+          "alerts": 32,
+          "tp": 32,
+          "fp": 0,
+          "fn": 1,
+          "lookalike_alerts": 0,
+          "alerts_per_1k_accounts": 3.45,
+          "precision": {
+            "value": 1.0,
+            "lo": 1.0,
+            "hi": 1.0
+          },
+          "recall": {
+            "value": 0.97,
+            "lo": 0.889,
+            "hi": 1.0
+          },
+          "f1": {
+            "value": 0.985,
+            "lo": 0.941,
+            "hi": 1.0
+          },
+          "pr_auc": {
+            "value": 0.997,
+            "lo": 0.987,
+            "hi": 1.0
+          },
+          "lookalike_fp_rate": {
+            "value": 0.0,
+            "lo": 0.0,
+            "hi": 0.0
+          },
+          "threshold": 0.5371,
+          "at_rb1_budget": {
+            "k": 71,
+            "tp": 33,
+            "precision": 0.465,
+            "recall": 1.0
+          }
+        },
+        {
+          "method": "M7-structure",
+          "label": "M7 without detector features",
+          "alerts": 32,
+          "tp": 29,
+          "fp": 3,
+          "fn": 4,
+          "lookalike_alerts": 2,
+          "alerts_per_1k_accounts": 3.45,
+          "precision": {
+            "value": 0.906,
+            "lo": 0.789,
+            "hi": 1.0
+          },
+          "recall": {
+            "value": 0.879,
+            "lo": 0.784,
+            "hi": 1.0
+          },
+          "f1": {
+            "value": 0.892,
+            "lo": 0.819,
+            "hi": 0.964
+          },
+          "pr_auc": {
+            "value": 0.963,
+            "lo": 0.925,
+            "hi": 1.0
+          },
+          "lookalike_fp_rate": {
+            "value": 0.012,
+            "lo": 0.0,
+            "hi": 0.03
+          },
+          "threshold": 0.2893,
+          "at_rb1_budget": {
+            "k": 71,
+            "tp": 32,
+            "precision": 0.451,
+            "recall": 0.97
+          }
+        }
+      ],
+      "by_typology": [
+        {
+          "typology": "CIRCULAR_FLOW",
+          "cases": 4,
+          "recall": {
+            "RB-1": 1.0,
+            "RB-2": 1.0,
+            "M7": 0.75,
+            "M7-structure": 0.75
+          }
+        },
+        {
+          "typology": "EXTERNAL_ATO",
+          "cases": 6,
+          "recall": {
+            "RB-1": 1.0,
+            "RB-2": 1.0,
+            "M7": 1.0,
+            "M7-structure": 1.0
+          }
+        },
+        {
+          "typology": "INSIDER_ATO+MULE_FACTORY",
+          "cases": 11,
+          "recall": {
+            "RB-1": 1.0,
+            "RB-2": 1.0,
+            "M7": 1.0,
+            "M7-structure": 1.0
+          }
+        },
+        {
+          "typology": "INSIDER_ATO+MULE_FACTORY+RELATIONSHIP",
+          "cases": 1,
+          "recall": {
+            "RB-1": 1.0,
+            "RB-2": 1.0,
+            "M7": 1.0,
+            "M7-structure": 1.0
+          }
+        },
+        {
+          "typology": "MULE_FACTORY",
+          "cases": 8,
+          "recall": {
+            "RB-1": 0.625,
+            "RB-2": 0.0,
+            "M7": 1.0,
+            "M7-structure": 0.625
+          }
+        },
+        {
+          "typology": "STRUCTURING",
+          "cases": 3,
+          "recall": {
+            "RB-1": 1.0,
+            "RB-2": 1.0,
+            "M7": 1.0,
+            "M7-structure": 1.0
+          }
+        }
+      ],
+      "lookalikes_by_type": [
+        {
+          "type": "HOUSEHOLD",
+          "cases": 54,
+          "alerted": {
+            "RB-1": 0,
+            "RB-2": 1,
+            "M7": 0,
+            "M7-structure": 0
+          }
+        },
+        {
+          "type": "S2",
+          "cases": 4,
+          "alerted": {
+            "RB-1": 4,
+            "RB-2": 0,
+            "M7": 0,
+            "M7-structure": 0
+          }
+        },
+        {
+          "type": "S4",
+          "cases": 23,
+          "alerted": {
+            "RB-1": 23,
+            "RB-2": 3,
+            "M7": 0,
+            "M7-structure": 0
+          }
+        },
+        {
+          "type": "S7",
+          "cases": 1,
+          "alerted": {
+            "RB-1": 0,
+            "RB-2": 0,
+            "M7": 0,
+            "M7-structure": 0
+          }
+        },
+        {
+          "type": "S8",
+          "cases": 20,
+          "alerted": {
+            "RB-1": 0,
+            "RB-2": 2,
+            "M7": 0,
+            "M7-structure": 0
+          }
+        },
+        {
+          "type": "SINGLE_OFFICER",
+          "cases": 17,
+          "alerted": {
+            "RB-1": 0,
+            "RB-2": 0,
+            "M7": 0,
+            "M7-structure": 0
+          }
+        },
+        {
+          "type": "VIDEO_KYC",
+          "cases": 51,
+          "alerted": {
+            "RB-1": 0,
+            "RB-2": 1,
+            "M7": 0,
+            "M7-structure": 2
+          }
+        }
+      ]
+    },
+    {
+      "key": "later",
+      "title": "Later events \u2014 held-out cases with an event on or after 02 Sep (including the 22 Sep live feed); models refitted on cases that ended before it",
+      "worlds": [
+        "11",
+        "42+feed"
+      ],
+      "cases": 126,
+      "positives": 21,
+      "lookalikes": 43,
+      "background": 62,
+      "accounts": 9268,
+      "rows": [
+        {
+          "method": "RB-1",
+          "label": "Rule baseline RB-1",
+          "alerts": 32,
+          "tp": 21,
+          "fp": 11,
+          "fn": 0,
+          "lookalike_alerts": 8,
+          "alerts_per_1k_accounts": 3.45,
+          "precision": {
+            "value": 0.656,
+            "lo": 0.486,
+            "hi": 0.828
+          },
+          "recall": {
+            "value": 1.0,
+            "lo": 1.0,
+            "hi": 1.0
+          },
+          "f1": {
+            "value": 0.792,
+            "lo": 0.655,
+            "hi": 0.906
+          },
+          "pr_auc": {
+            "value": 0.853,
+            "lo": 0.732,
+            "hi": 0.945
+          },
+          "lookalike_fp_rate": {
+            "value": 0.186,
+            "lo": 0.053,
+            "hi": 0.34
+          }
+        },
+        {
+          "method": "RB-2",
+          "label": "SUTRA lattice, rules only (RB-2)",
+          "alerts": 51,
+          "tp": 19,
+          "fp": 32,
+          "fn": 2,
+          "lookalike_alerts": 4,
+          "alerts_per_1k_accounts": 5.5,
+          "precision": {
+            "value": 0.373,
+            "lo": 0.24,
+            "hi": 0.511
+          },
+          "recall": {
+            "value": 0.905,
+            "lo": 0.774,
+            "hi": 1.0
+          },
+          "f1": {
+            "value": 0.528,
+            "lo": 0.378,
+            "hi": 0.658
+          },
+          "pr_auc": {
+            "value": 0.921,
+            "lo": 0.813,
+            "hi": 1.0
+          },
+          "lookalike_fp_rate": {
+            "value": 0.093,
+            "lo": 0.0,
+            "hi": 0.205
+          }
+        },
+        {
+          "method": "M7",
+          "label": "M7 connected-case prioritiser",
+          "alerts": 25,
+          "tp": 21,
+          "fp": 4,
+          "fn": 0,
+          "lookalike_alerts": 4,
+          "alerts_per_1k_accounts": 2.7,
+          "precision": {
+            "value": 0.84,
+            "lo": 0.679,
+            "hi": 0.966
+          },
+          "recall": {
+            "value": 1.0,
+            "lo": 1.0,
+            "hi": 1.0
+          },
+          "f1": {
+            "value": 0.913,
+            "lo": 0.809,
+            "hi": 0.982
+          },
+          "pr_auc": {
+            "value": 0.838,
+            "lo": 0.673,
+            "hi": 0.973
+          },
+          "lookalike_fp_rate": {
+            "value": 0.093,
+            "lo": 0.019,
+            "hi": 0.2
+          },
+          "threshold": 0.3096,
+          "at_rb1_budget": {
+            "k": 32,
+            "tp": 21,
+            "precision": 0.656,
+            "recall": 1.0
+          }
+        },
+        {
+          "method": "M7-structure",
+          "label": "M7 without detector features",
+          "alerts": 25,
+          "tp": 20,
+          "fp": 5,
+          "fn": 1,
+          "lookalike_alerts": 5,
+          "alerts_per_1k_accounts": 2.7,
+          "precision": {
+            "value": 0.8,
+            "lo": 0.636,
+            "hi": 0.958
+          },
+          "recall": {
+            "value": 0.952,
+            "lo": 0.85,
+            "hi": 1.0
+          },
+          "f1": {
+            "value": 0.87,
+            "lo": 0.75,
+            "hi": 0.962
+          },
+          "pr_auc": {
+            "value": 0.784,
+            "lo": 0.583,
+            "hi": 0.947
+          },
+          "lookalike_fp_rate": {
+            "value": 0.116,
+            "lo": 0.025,
+            "hi": 0.229
+          },
+          "threshold": 0.3435,
+          "at_rb1_budget": {
+            "k": 32,
+            "tp": 21,
+            "precision": 0.656,
+            "recall": 1.0
+          }
+        }
+      ],
+      "by_typology": [
+        {
+          "typology": "CIRCULAR_FLOW",
+          "cases": 2,
+          "recall": {
+            "RB-1": 1.0,
+            "RB-2": 1.0,
+            "M7": 1.0,
+            "M7-structure": 0.5
+          }
+        },
+        {
+          "typology": "EXTERNAL_ATO",
+          "cases": 3,
+          "recall": {
+            "RB-1": 1.0,
+            "RB-2": 1.0,
+            "M7": 1.0,
+            "M7-structure": 1.0
+          }
+        },
+        {
+          "typology": "INSIDER_ATO+MULE_FACTORY",
+          "cases": 10,
+          "recall": {
+            "RB-1": 1.0,
+            "RB-2": 1.0,
+            "M7": 1.0,
+            "M7-structure": 1.0
+          }
+        },
+        {
+          "typology": "INSIDER_ATO+MULE_FACTORY+RELATIONSHIP",
+          "cases": 1,
+          "recall": {
+            "RB-1": 1.0,
+            "RB-2": 1.0,
+            "M7": 1.0,
+            "M7-structure": 1.0
+          }
+        },
+        {
+          "typology": "MULE_FACTORY",
+          "cases": 2,
+          "recall": {
+            "RB-1": 1.0,
+            "RB-2": 0.0,
+            "M7": 1.0,
+            "M7-structure": 1.0
+          }
+        },
+        {
+          "typology": "STRUCTURING",
+          "cases": 3,
+          "recall": {
+            "RB-1": 1.0,
+            "RB-2": 1.0,
+            "M7": 1.0,
+            "M7-structure": 1.0
+          }
+        }
+      ],
+      "lookalikes_by_type": [
+        {
+          "type": "HOUSEHOLD",
+          "cases": 15,
+          "alerted": {
+            "RB-1": 0,
+            "RB-2": 1,
+            "M7": 0,
+            "M7-structure": 0
+          }
+        },
+        {
+          "type": "S2",
+          "cases": 4,
+          "alerted": {
+            "RB-1": 4,
+            "RB-2": 0,
+            "M7": 4,
+            "M7-structure": 4
+          }
+        },
+        {
+          "type": "S4",
+          "cases": 4,
+          "alerted": {
+            "RB-1": 4,
+            "RB-2": 1,
+            "M7": 0,
+            "M7-structure": 0
+          }
+        },
+        {
+          "type": "S8",
+          "cases": 2,
+          "alerted": {
+            "RB-1": 0,
+            "RB-2": 2,
+            "M7": 0,
+            "M7-structure": 0
+          }
+        },
+        {
+          "type": "SINGLE_OFFICER",
+          "cases": 5,
+          "alerted": {
+            "RB-1": 0,
+            "RB-2": 0,
+            "M7": 0,
+            "M7-structure": 0
+          }
+        },
+        {
+          "type": "VIDEO_KYC",
+          "cases": 16,
+          "alerted": {
+            "RB-1": 0,
+            "RB-2": 0,
+            "M7": 0,
+            "M7-structure": 1
+          }
+        }
+      ]
+    }
+  ],
+  "live_feed": [
+    {
+      "case_key": "CK-E887F93019",
+      "label_kind": "suspicious",
+      "typology": "INSIDER_ATO+MULE_FACTORY+RELATIONSHIP",
+      "instances": [
+        "S4-live-22sep",
+        "S4-suspicious",
+        "S5-suspicious",
+        "S7-suspicious"
+      ],
+      "rb1": [
+        "C1",
+        "C2",
+        "C3",
+        "C6"
+      ],
+      "rb2": "P1",
+      "m7_score": 0.99,
+      "m7_alert": true,
+      "top_features": [
+        {
+          "label": "Staff accesses Alibi could not explain",
+          "contribution": 4.091,
+          "refs": [
+            "AE-0000397",
+            "AE-0000398",
+            "AE-0000413",
+            "AE-0000414"
+          ]
+        },
+        {
+          "label": "Inflow forwarded within 60 min",
+          "contribution": 1.687,
+          "refs": [
+            "A-3533"
+          ]
+        },
+        {
+          "label": "Strongest single signal",
+          "contribution": 1.478,
+          "refs": [
+            "R8",
+            "A-3578",
+            "A-7731",
+            "A-6641"
+          ]
+        },
+        {
+          "label": "Hops in the longest chain",
+          "contribution": 1.303,
+          "refs": [
+            "AE-0055755"
+          ]
+        }
+      ]
+    }
+  ],
+  "live_feed_note": "The 22 Sep evening holds a second insider takeover that pays into the 21 Sep mule ring, and a legitimate pension camp. The camp opens no case: Alibi explains both mobile changes and no seeding detector fires.",
+  "summary": {
+    "cv": {
+      "RB-1": {
+        "precision": 0.45,
+        "recall": 0.876,
+        "lookalike_fp_rate": 0.176
+      },
+      "RB-2": {
+        "precision": 0.336,
+        "recall": 0.743,
+        "lookalike_fp_rate": 0.022
+      },
+      "M7": {
+        "precision": 1.0,
+        "recall": 0.991,
+        "lookalike_fp_rate": 0.0
+      },
+      "M7-structure": {
+        "precision": 0.965,
+        "recall": 0.965,
+        "lookalike_fp_rate": 0.007
+      }
+    },
+    "heldout": {
+      "RB-1": {
+        "precision": 0.423,
+        "recall": 0.909,
+        "lookalike_fp_rate": 0.163
+      },
+      "RB-2": {
+        "precision": 0.236,
+        "recall": 0.758,
+        "lookalike_fp_rate": 0.042
+      },
+      "M7": {
+        "precision": 1.0,
+        "recall": 0.97,
+        "lookalike_fp_rate": 0.0
+      },
+      "M7-structure": {
+        "precision": 0.906,
+        "recall": 0.879,
+        "lookalike_fp_rate": 0.012
+      }
+    },
+    "later": {
+      "RB-1": {
+        "precision": 0.656,
+        "recall": 1.0,
+        "lookalike_fp_rate": 0.186
+      },
+      "RB-2": {
+        "precision": 0.373,
+        "recall": 0.905,
+        "lookalike_fp_rate": 0.093
+      },
+      "M7": {
+        "precision": 0.84,
+        "recall": 1.0,
+        "lookalike_fp_rate": 0.093
+      },
+      "M7-structure": {
+        "precision": 0.8,
+        "recall": 0.952,
+        "lookalike_fp_rate": 0.116
+      }
+    }
+  }
+}

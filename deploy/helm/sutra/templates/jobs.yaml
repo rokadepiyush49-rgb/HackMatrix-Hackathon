@@ -1,0 +1,77 @@
+{{- $c := dict "root" . "component" "jobs" -}}
+{{- define "sutra.jobPod" -}}
+serviceAccountName: {{ .Values.serviceAccounts.jobs }}
+automountServiceAccountToken: true
+restartPolicy: Never
+securityContext: {{- include "sutra.podSecurity" . | nindent 2 }}
+volumes:
+  - { name: tmp, emptyDir: { sizeLimit: 2Gi } }
+{{- end -}}
+{{- if .Values.migrations.enabled }}
+# Schema migrations run before any new pod starts (pre-install / pre-upgrade hook). Alembic
+# migrations are written expand-then-contract, so old pods keep working against the new schema.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "sutra.fullname" . }}-migrate-{{ .Release.Revision }}
+  labels: {{- include "sutra.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migrate
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "0"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    argocd.argoproj.io/hook: PreSync
+spec:
+  backoffLimit: 2
+  activeDeadlineSeconds: 600
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels: {{- include "sutra.selector" $c | nindent 8 }}
+    spec:
+      {{- include "sutra.jobPod" . | nindent 6 }}
+      containers:
+        - name: migrate
+          image: {{ include "sutra.image" (dict "root" . "name" "api") }}
+          command: ["alembic", "upgrade", "head"]
+          {{- include "sutra.apiEnv" . | nindent 10 }}
+          resources: { requests: { cpu: 100m, memory: 256Mi }, limits: { memory: 512Mi } }
+          securityContext: {{- include "sutra.containerSecurity" . | nindent 12 }}
+          volumeMounts: [{ name: tmp, mountPath: /tmp }]
+{{- end }}
+{{- if .Values.detection.enabled }}
+---
+# Detection: Alibi → Needle → Brief over new events. Forbid overlap so two runs never race on writes.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "sutra.fullname" . }}-detect
+  labels: {{- include "sutra.labels" . | nindent 4 }}
+    app.kubernetes.io/component: detect
+spec:
+  schedule: {{ .Values.detection.schedule | quote }}
+  timeZone: Asia/Kolkata
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: {{ .Values.detection.activeDeadlineSeconds }}
+      ttlSecondsAfterFinished: 86400
+      template:
+        metadata:
+          labels: {{- include "sutra.selector" $c | nindent 12 }}
+        spec:
+          {{- include "sutra.jobPod" . | nindent 10 }}
+          containers:
+            - name: detect
+              image: {{ include "sutra.image" (dict "root" . "name" "api") }}
+              command: ["python", "-m", "app.cli", "detect"]
+              {{- include "sutra.apiEnv" . | nindent 14 }}
+                - { name: OTEL_SERVICE_NAME, value: sutra-detect }
+              resources: {{- toYaml .Values.detection.resources | nindent 16 }}
+              securityContext: {{- include "sutra.containerSecurity" . | nindent 16 }}
+              volumeMounts: [{ name: tmp, mountPath: /tmp }]
+{{- end }}
