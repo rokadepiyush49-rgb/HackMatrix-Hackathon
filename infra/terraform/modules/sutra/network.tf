@@ -2,7 +2,7 @@
 # to the internet at all). VPC endpoints keep S3/ECR/Secrets Manager traffic off the NAT and the internet.
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "~> 5.16"
+  version = "~> 6.7"
 
   name = local.name
   cidr = var.vpc_cidr
@@ -49,7 +49,7 @@ resource "aws_security_group" "endpoints" {
 
 module "endpoints" {
   source  = "terraform-aws-modules/vpc/aws//modules/vpc-endpoints"
-  version = "~> 5.16"
+  version = "~> 6.7"
 
   vpc_id             = module.vpc.vpc_id
   security_group_ids = [aws_security_group.endpoints.id]
