@@ -6,6 +6,9 @@ Hop grammar for insider chains (each hop within 72 h of the previous):
     → E4 digital takeover (new device / password reset / new payees) → E5 payouts to new payees
     → E5′ forwarding downstream → E6 money loops back
 
+Follow-on money (E5′, E6) counts only within 12 h of the funds arriving: layering moves in minutes
+to hours, and a longer reach would attribute a later, unrelated night's transfers to this chain.
+
 A chain is emitted only when it reaches money (E5). Access without money is a signal, not
 a chain — that structural filter is what keeps honest-but-unusual work out of the queue.
 """
@@ -21,6 +24,7 @@ from app.loom.frames import Frames
 from app.needle.detectors.rules import rupees
 
 HOP = pd.Timedelta(hours=72)
+LAYERING = pd.Timedelta(hours=12)
 ROOT_FIELDS = {"REGISTERED_MOBILE", "TXN_LIMIT", "EMAIL"}
 OUT_CHANNELS = {"IMPS", "UPI", "NEFT", "RTGS"}
 
@@ -120,7 +124,7 @@ def _downstream(ix: Index, recipients: list[tuple[str, pd.Timestamp, float]], ch
             if not ix.is_internal(acct) or acct in seen:
                 continue
             seen.add(acct)
-            outs = ix.outflows(acct, t_in, t_in + HOP)
+            outs = ix.outflows(acct, t_in, t_in + LAYERING)
             outs = outs[outs["amount"] >= 0.1 * amt_in]
             if outs.empty:
                 continue
@@ -282,10 +286,13 @@ def _build_insider(ix: Index, root, act, card) -> ChainDraft | None:
 
     # E5: payouts
     amt = float(pay["amount"].sum())
+    amounts = pay["amount"].tolist()
+    split = (f"{len(pay)} × {rupees(amounts[0])}" if len(set(amounts)) == 1
+             else " + ".join(rupees(a) for a in amounts))
     links.append(Link("E5", "TXN", pay["id"].iloc[0], pay["occurred_at"].min(),
                       f"{rupees(amt)} out",
-                      f"{len(pay)} × {rupees(pay['amount'].iloc[0])} via {pay['channel'].iloc[0]} to "
-                      + ", ".join(pay["to_account"].tolist()), "FRAUD", amt, pay["id"].tolist()))
+                      f"{split} via {pay['channel'].iloc[0]} to " + ", ".join(pay["to_account"].tolist()),
+                      "FRAUD", amt, pay["id"].tolist()))
 
     chain_accts = {acct, *pay["to_account"]}
     recips = [(r.to_account, r.occurred_at, r.amount) for r in pay.itertuples(index=False)]

@@ -9,6 +9,7 @@ labelled as such everywhere they appear.
 from __future__ import annotations
 
 import json
+import sys
 import time
 from datetime import UTC, datetime
 
@@ -52,6 +53,15 @@ def _mule_dataset(world, f):
     return frame[MULE_FEATURES].to_numpy(), y, frame
 
 
+def _libraries() -> dict[str, str]:
+    """Pin what built the model: a pickle loaded under different library versions can silently change scores."""
+    import lightgbm
+    import sklearn
+
+    return {"python": sys.version.split()[0], "numpy": np.__version__, "scikit-learn": sklearn.__version__,
+            "lightgbm": lightgbm.__version__}
+
+
 def train_all(seed: int = 7, size: str = "demo") -> dict:
     from kestrel_sim import generate
 
@@ -83,7 +93,7 @@ def train_all(seed: int = 7, size: str = "demo") -> dict:
     art_dir.mkdir(parents=True, exist_ok=True)
     joblib.dump({"scaler": scaler, "lr": lr, "platt": platt, "features": CHAIN_FEATURES,
                  "metrics": m5_metrics, "version": "1.0", "train_seed": seed, "n_train": int(len(y)),
-                 "trained_at": datetime.now(UTC).isoformat()}, art_dir / "chain_classifier.joblib")
+                 "trained_at": datetime.now(UTC).isoformat(), "libraries": _libraries()}, art_dir / "chain_classifier.joblib")
     print(f"  ✓ M5 {m5_metrics}")
 
     # ── M6 mule-likeness ─────────────────────────────────────────────────
@@ -104,7 +114,7 @@ def train_all(seed: int = 7, size: str = "demo") -> dict:
     }
     joblib.dump({"model": model, "features": MULE_FEATURES, "metrics": m6_metrics, "version": "1.0",
                  "train_seed": seed, "n_train": int(len(ym)),
-                 "trained_at": datetime.now(UTC).isoformat()}, art_dir / "mule_model.joblib")
+                 "trained_at": datetime.now(UTC).isoformat(), "libraries": _libraries()}, art_dir / "mule_model.joblib")
     print(f"  ✓ M6 {m6_metrics}")
 
     cards = REPO_ROOT / "ml" / "model_cards"

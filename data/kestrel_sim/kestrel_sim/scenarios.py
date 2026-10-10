@@ -70,11 +70,14 @@ def _ext(w: World, holder: str, xid: str | None = None, bank: str | None = None)
 
 def mule_factory(w: World, pools, insider: str, n: int, start: date, end: date,
                  fixed: dict[int, tuple[str, date]] | None = None,
-                 instance: str | None = None) -> tuple[list[str], list[str], list[str]]:
-    """Accounts opened + KYC-approved by `insider` without the customer present.
+                 instance: str | None = None, approver: str | None = None,
+                 share_upto: int = 7) -> tuple[list[str], list[str], list[str]]:
+    """Accounts opened by `insider` without the customer present, KYC-approved by `insider` —
+    or, when `approver` is given, by a colluding colleague (maker-checker satisfied on paper).
 
     Returns (account_ids, shared_device_ids, event_ids).
     """
+    checker = approver or insider
     fixed = fixed or {}
     emp = w.employees[insider]
     branch = emp["branch_id"]
@@ -87,16 +90,16 @@ def mule_factory(w: World, pools, insider: str, n: int, start: date, end: date,
         t = at(open_day, w.rng.randint(11, 16), w.rng.randint(0, 59))
         cust = new_customer(w, branch, w.rng.choice(["SELF_EMPLOYED", "HOMEMAKER", "STUDENT"]), t,
                             phone=shared_phone if i < 3 else None)
-        acct = new_account(w, cust, "SAVINGS", t, insider, insider, "BRANCH_DOCS", 0, aid=aid)
+        acct = new_account(w, cust, "SAVINGS", t, insider, checker, "BRANCH_DOCS", 0, aid=aid)
         accts.append(acct["id"])
         # self-created queue item → Alibi sees a "queue" reason; structure must catch this
         wi = w.work_item("QUEUE", w.seq("KQ", 5), t + timedelta(minutes=3), cust["id"], acct["id"],
                          insider, branch, "KYC review queue — new savings account")
         e1 = w.access(insider, None, "ACCT_OPEN", t, acct["id"], cust["id"])
-        e2 = w.access(insider, None, "KYC_APPROVE", t + timedelta(minutes=9), acct["id"],
+        e2 = w.access(checker, None, "KYC_APPROVE", t + timedelta(minutes=9), acct["id"],
                       cust["id"], ["kyc_documents"])
         events += [e1["id"], e2["id"], wi["id"]]
-        dev = shared_devices[i % 2] if i < 7 else new_device(w, "ANDROID", t + timedelta(days=2))
+        dev = shared_devices[i % 2] if i < share_upto else new_device(w, "ANDROID", t + timedelta(days=2))
         w.customer_device[cust["id"]] = dev
         cust["_mule"] = True
     return accts, shared_devices, events
@@ -605,7 +608,8 @@ def inject_training(w: World, pools) -> None:
     """Randomised instances for model training (independent world, no fixed IDs)."""
     rng = w.rng
     ops = [e for e, v in w.employees.items() if v["role"] == "OPS_OFFICER"]
-    insiders = rng.sample(ops, 5)
+    # Enough independent instances that M5's out-of-fold metrics rest on more than a handful of positives.
+    insiders = rng.sample(ops, min(len(ops), 12))
     for n, insider in enumerate(insiders):
         emp = w.employees[insider]
         for perm in ("KYC_APPROVE", "ACCT_OPEN"):
@@ -613,8 +617,12 @@ def inject_training(w: World, pools) -> None:
                   granted_by=emp["manager_id"], reason="Cross-training", request_ref=None,
                   valid_from=datetime(2025, 1, 2, tzinfo=IST), intended_expiry=None, revoked_at=None)
         day = rng.choice(working_days()[30:-3])
+        colleagues = [e for e, v in w.employees.items()
+                      if v["branch_id"] == emp["branch_id"] and v["role"] == "KYC_APPROVER"]
+        accomplice = rng.choice(colleagues) if colleagues and rng.random() < 0.4 else None
         mules, devs, fev = mule_factory(w, pools, insider, rng.randint(4, 9), day - timedelta(days=50),
-                                        day - timedelta(days=3))
+                                        day - timedelta(days=3), approver=accomplice,
+                                        share_upto=rng.randint(1, 5))
         _label(w, "S7", "suspicious", [insider, *mules, *devs], fev, instance=f"S7-s{n}")
         cons = consolidator_account(w, insider)
         mule_activity(w, pools, mules, cons, day - timedelta(days=45), day)
@@ -650,3 +658,47 @@ def inject_training(w: World, pools) -> None:
     for n in range(3):
         s = structuring(w, rng.choice(working_days()[20:-5]))
         _label(w, "S3", "suspicious", s["entities"], s["events"], instance=f"S3-s{n}")
+    legitimate_lookalikes(w)
+
+
+def legitimate_lookalikes(w: World) -> None:
+    """Legitimate accounts that share one surface trait with mules (training world only).
+
+    Without these, every mule is self-approved and presence-less and no legitimate account is,
+    so M6 would learn a single rule and score a meaningless AUC of 1.0. Real banks have all three:
+      • Video-KYC (V-CIP) openings — the customer is verified remotely, never at the branch;
+      • single-officer branches where opener and approver coincide under a documented exception;
+      • families who register one phone number across several accounts.
+    """
+    rng = w.rng
+    days = working_days()[5:-5]
+    branches = sorted({v["branch_id"] for v in w.employees.values()})
+    for _ in range(60):  # Video-KYC
+        bid = rng.choice(branches)
+        officer = rng.choice([e for e, v in w.employees.items() if v["branch_id"] == bid] or list(w.employees))
+        t = at(rng.choice(days), rng.randint(10, 18), rng.randint(0, 59))
+        cust = new_customer(w, bid, rng.choice(["SALARIED", "STUDENT", "SELF_EMPLOYED"]), t)
+        w.work_item("VCIP", f"VCIP-{rng.randint(100000, 999999)}", t - timedelta(minutes=15), cust["id"], None,
+                    officer, bid, "Video-KYC session — liveness and PAN verified", 18)
+        new_account(w, cust, "SAVINGS", t, officer, officer if rng.random() < 0.3 else None, "VIDEO_KYC", 0)
+    for _ in range(25):  # single-officer branch exception
+        bid = rng.choice(branches)
+        officer = rng.choice([e for e, v in w.employees.items() if v["branch_id"] == bid] or list(w.employees))
+        t = at(rng.choice(days), rng.randint(10, 16), rng.randint(0, 59))
+        cust = new_customer(w, bid, rng.choice(["HOMEMAKER", "SALARIED"]), t)
+        w.work_item("TOKEN", f"TKN-{rng.randint(100, 999)}", t - timedelta(minutes=10), cust["id"], None,
+                    officer, bid, "Counter token — account opening", 20)
+        w.work_item("EKYC", f"EKYC-{rng.randint(100000, 999999)}", t, cust["id"], None, officer, bid,
+                    "Aadhaar biometric eKYC — success; single-officer exception logged", 2)
+        new_account(w, cust, "SAVINGS", t, officer, officer, "BRANCH_BIOMETRIC", 0)
+    for n in range(30):  # households: one phone number and/or one family device across members
+        bid = rng.choice(branches)
+        t = at(rng.choice(days), rng.randint(10, 16), rng.randint(0, 59))
+        phone = w.phone() if n % 2 == 0 else None
+        family_device = new_device(w, "ANDROID", t) if n % 3 != 0 else None
+        for _member in range(rng.randint(2, 3)):
+            cust = new_customer(w, bid, rng.choice(["HOMEMAKER", "STUDENT", "SALARIED"]), t, phone=phone)
+            officer = rng.choice([e for e, v in w.employees.items() if v["branch_id"] == bid] or list(w.employees))
+            new_account(w, cust, "SAVINGS", t, officer, None, "BRANCH_BIOMETRIC", 0)
+            if family_device:
+                w.customer_device[cust["id"]] = family_device

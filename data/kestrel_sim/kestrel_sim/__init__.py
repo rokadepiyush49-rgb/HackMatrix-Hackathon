@@ -16,6 +16,7 @@ from kestrel_sim.baseline import (
     run_customers,
     run_staff,
 )
+from kestrel_sim.live import build_live_feed
 from kestrel_sim.scenarios import (
     CATALOGUE,
     DEMO_APPROVER_BIAS,
@@ -60,4 +61,6 @@ def generate(seed: int = 42, size: str = "demo", mode: str | None = None) -> Wor
 
     for aid, acct in w.accounts.items():
         acct["balance_paise"] = max(0, w.balance.get(aid, 0)) if acct["kind"] != "EXTERNAL" else 0
+    if mode == "demo":
+        build_live_feed(w, pools)  # after the snapshot, so stored balances exclude the feed
     return w

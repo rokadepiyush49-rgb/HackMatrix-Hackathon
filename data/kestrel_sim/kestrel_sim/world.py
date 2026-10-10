@@ -36,6 +36,9 @@ class World:
     payees: dict[str, set[str]] = field(default_factory=lambda: defaultdict(set))
     customer_device: dict[str, str] = field(default_factory=dict)
     reserved_for_scenarios: set[str] = field(default_factory=set)
+    # demo world only: the evening held back for the live feed (see kestrel_sim.live)
+    live_feed: list[dict] = field(default_factory=list)
+    live_meta: dict = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         self.rng = random.Random(self.seed)

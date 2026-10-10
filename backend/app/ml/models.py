@@ -8,6 +8,7 @@ M6 is LightGBM; per-prediction contributions come from its native TreeSHAP.
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
 from functools import lru_cache
 
@@ -34,6 +35,7 @@ def _load(name: str):
 
 def reload() -> None:
     _load.cache_clear()
+    _sha256.cache_clear()
 
 
 def score_chain(features: dict) -> ChainScore | None:
@@ -71,11 +73,22 @@ def score_mules(frame: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=["account_id", "p", "contributions"]).set_index("account_id")
 
 
+@lru_cache
+def _sha256(name: str) -> str | None:
+    path = get_settings().artifacts_path / f"{name}.joblib"
+    return hashlib.sha256(path.read_bytes()).hexdigest() if path.exists() else None
+
+
 def model_meta() -> dict:
+    """What produced every score: version, training seed, metrics, libraries and the artifact's hash.
+
+    Evidence packs embed this, so a pack can be traced to the exact model bytes that scored it.
+    """
     out = {}
     for name in ("chain_classifier", "mule_model"):
         art = _load(name)
         if art is not None:
             out[name] = {k: v for k, v in art.items() if k in ("version", "metrics", "trained_at",
-                                                              "train_seed", "n_train", "features")}
+                                                              "train_seed", "n_train", "features", "libraries")}
+            out[name]["artifact_sha256"] = _sha256(name)
     return out
