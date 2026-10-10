@@ -29,7 +29,7 @@ dependencies = [
 [project.optional-dependencies]
 # Production-only integrations, installed in the container image (`--extra cloud`).
 cloud = [
-  "anthropic[bedrock]>=1.8",   # SigV4 signing for Claude in Amazon Bedrock
+  "anthropic[bedrock]>=1.11.0",   # SigV4 signing for Claude in Amazon Bedrock
   "boto3>=1.35",
   "redis>=5.0",
   "opentelemetry-sdk>=1.27",
