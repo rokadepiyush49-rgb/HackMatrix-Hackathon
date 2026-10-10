@@ -3,7 +3,7 @@
 # Rollouts) and GitOps (Argo CD) — all Kubernetes-native and portable to any bank's on-prem cluster.
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 20.31"
+  version = "~> 21.26"
 
   cluster_name    = local.name
   cluster_version = var.cluster_version
@@ -58,7 +58,7 @@ module "eks" {
 
 module "karpenter" {
   source  = "terraform-aws-modules/eks/aws//modules/karpenter"
-  version = "~> 20.31"
+  version = "~> 21.26"
 
   cluster_name                    = module.eks.cluster_name
   enable_v1_permissions           = true
