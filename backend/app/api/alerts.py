@@ -46,6 +46,19 @@ def get_alert(alert_id: str, p: CurrentUser, db: Annotated[Session, Depends(get_
     return alert_full(db, alert_id)
 
 
+@router.get("/alerts/{alert_id}/revisions")
+def alert_revisions(alert_id: str, p: CurrentUser, db: Annotated[Session, Depends(get_db)]) -> dict:
+    """The case's history: every revision of its state, what changed and why (append-only)."""
+    from app.brief import revisions
+
+    revs = revisions.history(db.connection(), alert_id)
+    if not revs and db.get(Alert, alert_id) is None:
+        raise HTTPException(404, f"Alert {alert_id} not found")
+    return {"alert_id": alert_id, "alert_key": revs[0]["alert_key"] if revs else None, "revisions": revs,
+            "note": "Revisions are written by detection and never edited. A suspicion score is a reason to look "
+                    "first, not a finding."}
+
+
 class AlertPatch(BaseModel):
     assignee: str | None = None
     state: str | None = None

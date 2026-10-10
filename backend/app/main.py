@@ -78,10 +78,15 @@ def create_app() -> FastAPI:
             checks["database"] = "ok"
         except Exception as e:  # noqa: BLE001 — any failure means not ready
             checks["database"] = f"error: {type(e).__name__}"
-        artifacts = get_settings().artifacts_path
-        checks["models"] = "ok" if (artifacts / "chain_classifier.joblib").exists() else "missing"
+        from app.ml.registry import status as model_status
+
+        models = model_status()
+        refused = {k: v["status"] for k, v in models.items() if v["status"] not in ("ok", "unregistered")}
+        checks["models"] = "ok" if not refused else "; ".join(f"{k}: {v}" for k, v in refused.items())
         ok = all(v == "ok" for v in checks.values())
-        return JSONResponse({"status": "ok" if ok else "degraded", "checks": checks}, status_code=200 if ok else 503)
+        return JSONResponse({"status": "ok" if ok else "degraded", "checks": checks,
+                             "models": {k: {"status": v["status"], "version": v["version"]} for k, v in models.items()}},
+                            status_code=200 if ok else 503)
 
     from app.core.db import engine
 

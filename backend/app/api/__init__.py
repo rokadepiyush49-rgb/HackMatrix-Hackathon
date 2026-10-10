@@ -3,6 +3,7 @@
 from fastapi import APIRouter
 
 from app.api import (
+    aa,
     alerts,
     auth,
     bank,
@@ -19,5 +20,5 @@ from app.api import (
 )
 
 router = APIRouter()
-for module in (auth, overview, alerts, cases, graph, entities, intel, workbench, packs, governance, stream, live, bank):
+for module in (auth, overview, alerts, cases, graph, entities, intel, workbench, packs, governance, stream, live, bank, aa):
     router.include_router(module.router)

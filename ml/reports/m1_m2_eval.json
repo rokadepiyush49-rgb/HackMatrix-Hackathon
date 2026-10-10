@@ -1,0 +1,522 @@
+{
+  "generated_at": "2026-10-10T18:11:32.344804+00:00",
+  "note": "Synthetic Kestrel-Sim worlds. Unsupervised models scored against simulator ground truth; not real-bank accuracy. The positive class is a handful of sessions per world.",
+  "unit": "staff session",
+  "worlds": [
+    7,
+    8,
+    9,
+    10,
+    11
+  ],
+  "excluded": {
+    "42": "thresholds were set on the demo world"
+  },
+  "label": "1 when an S4/S5 suspicious variant's labelled staff action happened in the session",
+  "counts": {
+    "7": {
+      "sessions": 4003,
+      "positives": 12,
+      "lookalike_sessions": 6
+    },
+    "8": {
+      "sessions": 3994,
+      "positives": 12,
+      "lookalike_sessions": 6
+    },
+    "9": {
+      "sessions": 4012,
+      "positives": 12,
+      "lookalike_sessions": 6
+    },
+    "10": {
+      "sessions": 4017,
+      "positives": 12,
+      "lookalike_sessions": 6
+    },
+    "11": {
+      "sessions": 4007,
+      "positives": 12,
+      "lookalike_sessions": 6
+    },
+    "pooled": {
+      "sessions": 20033,
+      "positives": 60,
+      "lookalike_sessions": 30
+    }
+  },
+  "thresholds": {
+    "M1": "share < 0.004 and starts at or after 20:00",
+    "M2": "bottom 0.5% of the role",
+    "M2-LOO": "bottom 0.5% of the role",
+    "AFTER_HOURS": "starts at or after 20:00 or before 07:00",
+    "FIRST_LATE": "after hours and the person's first after-hours session",
+    "SENSITIVE": "two or more sensitive actions or override uses"
+  },
+  "pooled": {
+    "M1": {
+      "flagged": 46,
+      "tp": 35,
+      "precision": 0.761,
+      "recall": 0.583,
+      "lookalikes_flagged": 0,
+      "flagged_per_1000_sessions": 2.3,
+      "pr_auc": 0.72,
+      "pr_auc_chance": 0.003
+    },
+    "M2": {
+      "flagged": 38,
+      "tp": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "lookalikes_flagged": 0,
+      "flagged_per_1000_sessions": 1.9,
+      "pr_auc": 0.324,
+      "pr_auc_chance": 0.003
+    },
+    "AFTER_HOURS": {
+      "flagged": 221,
+      "tp": 35,
+      "precision": 0.158,
+      "recall": 0.583,
+      "lookalikes_flagged": 0,
+      "flagged_per_1000_sessions": 11.03,
+      "pr_auc": 0.094,
+      "pr_auc_chance": 0.003
+    },
+    "FIRST_LATE": {
+      "flagged": 50,
+      "tp": 35,
+      "precision": 0.7,
+      "recall": 0.583,
+      "lookalikes_flagged": 0,
+      "flagged_per_1000_sessions": 2.5,
+      "pr_auc": 0.41,
+      "pr_auc_chance": 0.003
+    },
+    "SENSITIVE": {
+      "flagged": 4774,
+      "tp": 41,
+      "precision": 0.009,
+      "recall": 0.683,
+      "lookalikes_flagged": 30,
+      "flagged_per_1000_sessions": 238.31,
+      "pr_auc": 0.009,
+      "pr_auc_chance": 0.003
+    },
+    "M2-LOO": {
+      "flagged": 38,
+      "tp": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "lookalikes_flagged": 0,
+      "flagged_per_1000_sessions": 1.9,
+      "pr_auc": 0.323,
+      "pr_auc_chance": 0.003
+    }
+  },
+  "per_world": {
+    "7": {
+      "M1": {
+        "flagged": 11,
+        "tp": 9,
+        "precision": 0.818,
+        "recall": 0.75,
+        "lookalikes_flagged": 0,
+        "flagged_per_1000_sessions": 2.75,
+        "pr_auc": 0.7,
+        "pr_auc_chance": 0.003
+      },
+      "M2": {
+        "flagged": 7,
+        "tp": 0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "lookalikes_flagged": 0,
+        "flagged_per_1000_sessions": 1.75,
+        "pr_auc": 0.408,
+        "pr_auc_chance": 0.003
+      },
+      "AFTER_HOURS": {
+        "flagged": 51,
+        "tp": 9,
+        "precision": 0.176,
+        "recall": 0.75,
+        "lookalikes_flagged": 0,
+        "flagged_per_1000_sessions": 12.74,
+        "pr_auc": 0.133,
+        "pr_auc_chance": 0.003
+      },
+      "FIRST_LATE": {
+        "flagged": 12,
+        "tp": 9,
+        "precision": 0.75,
+        "recall": 0.75,
+        "lookalikes_flagged": 0,
+        "flagged_per_1000_sessions": 3.0,
+        "pr_auc": 0.563,
+        "pr_auc_chance": 0.003
+      },
+      "SENSITIVE": {
+        "flagged": 956,
+        "tp": 11,
+        "precision": 0.012,
+        "recall": 0.917,
+        "lookalikes_flagged": 6,
+        "flagged_per_1000_sessions": 238.82,
+        "pr_auc": 0.011,
+        "pr_auc_chance": 0.003
+      },
+      "M2-LOO": {
+        "flagged": 7,
+        "tp": 0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "lookalikes_flagged": 0,
+        "flagged_per_1000_sessions": 1.75,
+        "pr_auc": 0.408,
+        "pr_auc_chance": 0.003
+      }
+    },
+    "8": {
+      "M1": {
+        "flagged": 8,
+        "tp": 7,
+        "precision": 0.875,
+        "recall": 0.583,
+        "lookalikes_flagged": 0,
+        "flagged_per_1000_sessions": 2.0,
+        "pr_auc": 0.703,
+        "pr_auc_chance": 0.003
+      },
+      "M2": {
+        "flagged": 9,
+        "tp": 0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "lookalikes_flagged": 0,
+        "flagged_per_1000_sessions": 2.25,
+        "pr_auc": 0.396,
+        "pr_auc_chance": 0.003
+      },
+      "AFTER_HOURS": {
+        "flagged": 48,
+        "tp": 7,
+        "precision": 0.146,
+        "recall": 0.583,
+        "lookalikes_flagged": 0,
+        "flagged_per_1000_sessions": 12.02,
+        "pr_auc": 0.086,
+        "pr_auc_chance": 0.003
+      },
+      "FIRST_LATE": {
+        "flagged": 10,
+        "tp": 7,
+        "precision": 0.7,
+        "recall": 0.583,
+        "lookalikes_flagged": 0,
+        "flagged_per_1000_sessions": 2.5,
+        "pr_auc": 0.41,
+        "pr_auc_chance": 0.003
+      },
+      "SENSITIVE": {
+        "flagged": 957,
+        "tp": 8,
+        "precision": 0.008,
+        "recall": 0.667,
+        "lookalikes_flagged": 6,
+        "flagged_per_1000_sessions": 239.61,
+        "pr_auc": 0.009,
+        "pr_auc_chance": 0.003
+      },
+      "M2-LOO": {
+        "flagged": 9,
+        "tp": 0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "lookalikes_flagged": 0,
+        "flagged_per_1000_sessions": 2.25,
+        "pr_auc": 0.396,
+        "pr_auc_chance": 0.003
+      }
+    },
+    "9": {
+      "M1": {
+        "flagged": 9,
+        "tp": 7,
+        "precision": 0.778,
+        "recall": 0.583,
+        "lookalikes_flagged": 0,
+        "flagged_per_1000_sessions": 2.24,
+        "pr_auc": 0.639,
+        "pr_auc_chance": 0.00299
+      },
+      "M2": {
+        "flagged": 7,
+        "tp": 0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "lookalikes_flagged": 0,
+        "flagged_per_1000_sessions": 1.74,
+        "pr_auc": 0.424,
+        "pr_auc_chance": 0.00299
+      },
+      "AFTER_HOURS": {
+        "flagged": 43,
+        "tp": 7,
+        "precision": 0.163,
+        "recall": 0.583,
+        "lookalikes_flagged": 0,
+        "flagged_per_1000_sessions": 10.72,
+        "pr_auc": 0.096,
+        "pr_auc_chance": 0.00299
+      },
+      "FIRST_LATE": {
+        "flagged": 10,
+        "tp": 7,
+        "precision": 0.7,
+        "recall": 0.583,
+        "lookalikes_flagged": 0,
+        "flagged_per_1000_sessions": 2.49,
+        "pr_auc": 0.41,
+        "pr_auc_chance": 0.00299
+      },
+      "SENSITIVE": {
+        "flagged": 950,
+        "tp": 8,
+        "precision": 0.008,
+        "recall": 0.667,
+        "lookalikes_flagged": 6,
+        "flagged_per_1000_sessions": 236.79,
+        "pr_auc": 0.009,
+        "pr_auc_chance": 0.00299
+      },
+      "M2-LOO": {
+        "flagged": 7,
+        "tp": 0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "lookalikes_flagged": 0,
+        "flagged_per_1000_sessions": 1.74,
+        "pr_auc": 0.424,
+        "pr_auc_chance": 0.00299
+      }
+    },
+    "10": {
+      "M1": {
+        "flagged": 11,
+        "tp": 7,
+        "precision": 0.636,
+        "recall": 0.583,
+        "lookalikes_flagged": 0,
+        "flagged_per_1000_sessions": 2.74,
+        "pr_auc": 0.837,
+        "pr_auc_chance": 0.00299
+      },
+      "M2": {
+        "flagged": 7,
+        "tp": 0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "lookalikes_flagged": 0,
+        "flagged_per_1000_sessions": 1.74,
+        "pr_auc": 0.419,
+        "pr_auc_chance": 0.00299
+      },
+      "AFTER_HOURS": {
+        "flagged": 38,
+        "tp": 7,
+        "precision": 0.184,
+        "recall": 0.583,
+        "lookalikes_flagged": 0,
+        "flagged_per_1000_sessions": 9.46,
+        "pr_auc": 0.109,
+        "pr_auc_chance": 0.00299
+      },
+      "FIRST_LATE": {
+        "flagged": 10,
+        "tp": 7,
+        "precision": 0.7,
+        "recall": 0.583,
+        "lookalikes_flagged": 0,
+        "flagged_per_1000_sessions": 2.49,
+        "pr_auc": 0.41,
+        "pr_auc_chance": 0.00299
+      },
+      "SENSITIVE": {
+        "flagged": 951,
+        "tp": 7,
+        "precision": 0.007,
+        "recall": 0.583,
+        "lookalikes_flagged": 6,
+        "flagged_per_1000_sessions": 236.74,
+        "pr_auc": 0.009,
+        "pr_auc_chance": 0.00299
+      },
+      "M2-LOO": {
+        "flagged": 7,
+        "tp": 0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "lookalikes_flagged": 0,
+        "flagged_per_1000_sessions": 1.74,
+        "pr_auc": 0.419,
+        "pr_auc_chance": 0.00299
+      }
+    },
+    "11": {
+      "M1": {
+        "flagged": 7,
+        "tp": 5,
+        "precision": 0.714,
+        "recall": 0.417,
+        "lookalikes_flagged": 0,
+        "flagged_per_1000_sessions": 1.75,
+        "pr_auc": 0.827,
+        "pr_auc_chance": 0.00299
+      },
+      "M2": {
+        "flagged": 8,
+        "tp": 0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "lookalikes_flagged": 0,
+        "flagged_per_1000_sessions": 2.0,
+        "pr_auc": 0.399,
+        "pr_auc_chance": 0.00299
+      },
+      "AFTER_HOURS": {
+        "flagged": 41,
+        "tp": 5,
+        "precision": 0.122,
+        "recall": 0.417,
+        "lookalikes_flagged": 0,
+        "flagged_per_1000_sessions": 10.23,
+        "pr_auc": 0.053,
+        "pr_auc_chance": 0.00299
+      },
+      "FIRST_LATE": {
+        "flagged": 8,
+        "tp": 5,
+        "precision": 0.625,
+        "recall": 0.417,
+        "lookalikes_flagged": 0,
+        "flagged_per_1000_sessions": 2.0,
+        "pr_auc": 0.262,
+        "pr_auc_chance": 0.00299
+      },
+      "SENSITIVE": {
+        "flagged": 960,
+        "tp": 7,
+        "precision": 0.007,
+        "recall": 0.583,
+        "lookalikes_flagged": 6,
+        "flagged_per_1000_sessions": 239.58,
+        "pr_auc": 0.009,
+        "pr_auc_chance": 0.00299
+      },
+      "M2-LOO": {
+        "flagged": 8,
+        "tp": 0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "lookalikes_flagged": 0,
+        "flagged_per_1000_sessions": 2.0,
+        "pr_auc": 0.399,
+        "pr_auc_chance": 0.00299
+      }
+    }
+  },
+  "seconds": 72.9,
+  "decision": {
+    "rule": "Replace M2 only if M2-LOO raises pooled PR-AUC by \u2265 0.02, wins by \u2265 0.02 in a majority of worlds, and flags no more look-alikes.",
+    "m2_loo_pr_auc_delta": -0.001,
+    "worlds_won": 0,
+    "replace_m2": false
+  },
+  "m2_threshold_study": {
+    "tune_worlds": [
+      7,
+      8,
+      9
+    ],
+    "test_worlds": [
+      10,
+      11
+    ],
+    "candidates": [
+      0.005,
+      0.01,
+      0.02,
+      0.05,
+      0.1
+    ],
+    "tune_sweep": [
+      {
+        "threshold": 0.005,
+        "flagged": 23,
+        "tp": 0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "lookalikes_flagged": 0
+      },
+      {
+        "threshold": 0.01,
+        "flagged": 58,
+        "tp": 16,
+        "precision": 0.276,
+        "recall": 0.444,
+        "f1": 0.34,
+        "lookalikes_flagged": 0
+      },
+      {
+        "threshold": 0.02,
+        "flagged": 143,
+        "tp": 36,
+        "precision": 0.252,
+        "recall": 1.0,
+        "f1": 0.402,
+        "lookalikes_flagged": 0
+      },
+      {
+        "threshold": 0.05,
+        "flagged": 373,
+        "tp": 36,
+        "precision": 0.097,
+        "recall": 1.0,
+        "f1": 0.176,
+        "lookalikes_flagged": 0
+      },
+      {
+        "threshold": 0.1,
+        "flagged": 730,
+        "tp": 36,
+        "precision": 0.049,
+        "recall": 1.0,
+        "f1": 0.094,
+        "lookalikes_flagged": 0
+      }
+    ],
+    "chosen_on_tune": 0.02,
+    "test_at_chosen": {
+      "threshold": 0.02,
+      "flagged": 99,
+      "tp": 24,
+      "precision": 0.242,
+      "recall": 1.0,
+      "f1": 0.39,
+      "lookalikes_flagged": 0
+    },
+    "test_at_deployed": {
+      "threshold": 0.005,
+      "flagged": 15,
+      "tp": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "lookalikes_flagged": 0
+    },
+    "note": "Chosen on the tuning worlds only; the test worlds are reported once at the chosen and deployed thresholds. Changing the deployed threshold would change M2 signals, which are M7 features, so M7 would have to be retrained and re-evaluated before any change."
+  }
+}

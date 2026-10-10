@@ -153,7 +153,7 @@ export interface AlertDetail extends AlertSummary {
   features: Record<string, number>;
   contributions: Contribution[];
   employee: EmployeeCard | null;
-  account: { id: string; holder_name: string; status: string; kind: string; balance: number } | null;
+  account: { id: string; holder_name: string; status: string; kind: string; balance: number; customer_id?: string | null } | null;
   lanes: Lane[];
   headline: { access_to_money_s: number | null; enabling_privilege_lead_s: number | null };
 }
@@ -268,6 +268,7 @@ export interface CouncilAgent {
   position: string;
   claims: string[];
   evidence: string[];
+  engine?: "llm" | "deterministic";
 }
 
 export interface CouncilEntry {
@@ -279,6 +280,7 @@ export interface CouncilEntry {
   evidence: string[];
   claim: string | null;
   status: string | null;
+  engine?: "llm" | "deterministic";
 }
 
 export interface CouncilClaim {
@@ -291,6 +293,108 @@ export interface CouncilClaim {
   counterargument: string | null;
   sources: string[];
   t: string | null;
+  /** What the claim rests on: a record (OBSERVED), a model output (MODEL), several records (INFERRED), or nothing yet (HYPOTHESIS). */
+  kind?: "OBSERVED" | "MODEL" | "INFERRED" | "HYPOTHESIS";
+  engine?: "llm" | "deterministic";
+}
+
+export type CouncilEngine = "llm" | "hybrid" | "deterministic";
+
+export interface CouncilTraceStep {
+  agent: string;
+  round: number;
+  purpose: string;
+  status: "OK" | "REPAIRED" | "INVALID" | "FAILED" | "SKIPPED" | "CACHED" | "PENDING";
+  ms: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  attempts: number;
+  error: string | null;
+  validation_errors: string[];
+  dropped: { text: string; reason: string }[];
+  adjusted: { text: string; from: string; to: string; reason: string }[];
+  evidence_sent: string[];
+  batch: string | null;
+}
+
+export interface CouncilTrace {
+  model: string;
+  prompt_version: string;
+  steps: CouncilTraceStep[];
+  usage: { calls: number; tokens: number; seconds: number; budgets: Record<string, number> };
+  fallbacks: { agent: string; reason: string }[];
+  engines: Record<string, string>;
+  dropped: number;
+  adjusted: number;
+}
+
+export interface CouncilCoverage {
+  evidence_total: number;
+  reviewed: number;
+  unreviewed: string[];
+  partial: boolean;
+  too_large_for_one_call?: string[];
+}
+
+export interface CouncilRunMeta {
+  run_id: string;
+  status: "RUNNING" | "COMPLETE" | "PARTIAL" | "FALLBACK" | "FAILED";
+  engine: CouncilEngine | null;
+  requested_engine: string;
+  model: string | null;
+  started_at: string;
+  finished_at: string | null;
+  usage: { calls?: number; tokens?: number; seconds?: number };
+  coverage: Partial<CouncilCoverage>;
+  error: string | null;
+  stale: boolean;
+}
+
+export interface CouncilRunStatus extends CouncilRunMeta {
+  alert_id: string;
+  trace?: CouncilTrace;
+  result?: Council;
+}
+
+export interface CouncilStatus {
+  configured_engine: string;
+  effective_engine: "llm" | "deterministic";
+  key_configured: boolean;
+  model: string;
+  budgets: { calls: number; tokens: number; deadline_s: number };
+}
+
+export interface CaseRevision {
+  rev: number;
+  run_id: string;
+  at: string;
+  status: "OPENED" | "REVISED" | "WITHDRAWN";
+  priority: Priority | null;
+  evidence_count: number;
+  amount_at_risk: number;
+  suspicion_p: number | null;
+  case_key: string | null;
+  snapshot_sha256: string;
+  changes: { field: string; before: unknown; after: unknown; why: string }[];
+  trigger: { kind?: string; plan?: string; late?: Record<string, number>; duplicates?: number; conflicts?: number; checkpoint?: number };
+  summary: string;
+}
+
+export interface AAConsent {
+  id: string;
+  customer_id: string;
+  provider: string;
+  data_source: "SYNTHETIC_DEMO" | "SANDBOX" | "LIVE";
+  status: "PENDING" | "ACTIVE" | "REJECTED" | "REVOKED" | "EXPIRED";
+  purpose: string;
+  date_from: string;
+  date_to: string;
+  created_at: string;
+  approved_at: string | null;
+  fetched_at: string | null;
+  data_expires_at: string | null;
+  redirect_url: string | null;
+  rows: number;
 }
 
 export interface Council {
@@ -305,8 +409,14 @@ export interface Council {
   tally: Record<string, number>;
   consensus: { outcome: string; agree: string[]; dissent: { agent: string; reason: string }[]; links_supported: string; human_review: boolean };
   sensitivity: { evidence: string; if: { condition: string; effect: string }[] }[];
-  stats: { agents: number; evidence: number; rounds: number; requests: number; entries: number };
+  stats: { agents: number; evidence: number; rounds: number; requests: number; entries: number; llm_calls?: number; tokens?: number; seconds?: number };
   note: string;
+  engine?: CouncilEngine;
+  model?: string;
+  prompt_version?: string;
+  fallback_reason?: string;
+  coverage?: CouncilCoverage;
+  run?: CouncilRunMeta;
 }
 
 export interface MendControl {
@@ -538,6 +648,10 @@ export interface LiveFeedRow {
   ingested?: boolean;
   strand?: Strand;
   n?: number;
+  /** Re-delivery number in an arrival-order replay (0 = first delivery). */
+  copy?: number;
+  /** What ingest did with this delivery. */
+  receipt?: { outcome: "NEW" | "DUPLICATE" | "CONFLICT"; late: boolean; late_by_s: number | null; effect: string | null; arrived_at: string; reason: string | null };
 }
 
 export interface LiveLink { code: string; type: string; event_id: string; t: string; title: string; detail: string; lane: Lane; live: boolean }

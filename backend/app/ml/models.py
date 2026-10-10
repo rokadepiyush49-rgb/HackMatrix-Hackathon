@@ -14,7 +14,6 @@ import hashlib
 from dataclasses import dataclass
 from functools import lru_cache
 
-import joblib
 import numpy as np
 import pandas as pd
 
@@ -34,8 +33,11 @@ class ChainScore:
 
 @lru_cache
 def _load(name: str):
-    path = get_settings().artifacts_path / f"{name}.joblib"
-    return joblib.load(path) if path.exists() else None
+    """The approved artifact, checked by the registry (checksum, libraries, feature schema). None when it is
+    missing or refused — detection then runs on rules alone (app.ml.registry)."""
+    from app.ml.registry import load
+
+    return load(name).artifact
 
 
 def reload() -> None:
@@ -124,6 +126,9 @@ def model_meta() -> dict:
 
     Evidence packs embed this, so a pack can be traced to the exact model bytes that scored it.
     """
+    from app.ml.registry import read_registry
+
+    reg = read_registry()
     out = {}
     for name in MODELS:
         art = _load(name)
@@ -131,4 +136,7 @@ def model_meta() -> dict:
             out[name] = {k: v for k, v in art.items() if k in ("version", "metrics", "trained_at", "train_seeds",
                                                               "n_train", "features", "libraries", "threshold", "cv")}
             out[name]["artifact_sha256"] = _sha256(name)
+            e = reg.get(name) or {}
+            out[name]["registry"] = {"status": e.get("status", "unregistered"), "promoted_at": e.get("promoted_at"),
+                                     "feature_schema": e.get("feature_schema")}
     return out

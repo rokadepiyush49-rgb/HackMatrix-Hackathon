@@ -47,3 +47,13 @@ def test_audit_digest_is_timezone_independent():
     utc = datetime(2026, 9, 21, 16, 30, tzinfo=UTC)
     ist = utc.astimezone(ZoneInfo("Asia/Kolkata"))
     assert _digest(GENESIS, utc, "a", "b", None, {}) == _digest(GENESIS, ist, "a", "b", None, {})
+
+
+def test_sign_out_is_recorded_in_the_audit_chain(client, as_user, db):
+    from sqlalchemy import text
+
+    r = client.post("/api/v1/auth/logout", headers=as_user("ananya"))
+    assert r.status_code == 200 and r.json() == {"ok": True}
+    last = db.execute(text("SELECT actor, action FROM audit_log ORDER BY id DESC LIMIT 1")).one()
+    assert (last.actor, last.action) == ("ananya", "auth.logout")
+    assert client.post("/api/v1/auth/logout").status_code == 401, "signing out needs a session"

@@ -99,3 +99,25 @@ Open two windows side by side: **http://localhost:3000/bank** (the bank) and **S
 
 The bank refuses what a bank would: a transfer above the transaction limit or the balance, money to someone who is not
 a payee, an override nobody granted, a biometric change with no eKYC.
+
+## FIN-04 final-round segment (about 6 minutes)
+
+What the brief asks to see: a legitimate look-alike, coordinated suspicious activity, late linking
+evidence and duplicate delivery, with case history and priority changes. Each replay runs detection twice
+(about 25 s per run on an M-series laptop; about 80 s on a Windows laptop with Postgres in Docker). On a
+slow machine, run the late-link replay just before the judges arrive and show its case history live.
+
+| Step | Screen | Do | Say |
+|---|---|---|---|
+| 1 | **Live Ops** | Arrival order → **IMPS connector lags (late linking evidence)** → **Play in this arrival order** | "Same evening, but the IMPS switch's connector is 35 minutes late. Every row is logged with when it happened and when it reached us." |
+| 2 | Live Ops — first detection | Point at the empty output after the first checkpoint | "The insider's override, login and mobile change are in. No money has arrived, so there is no chain yet. Absence of evidence is not a finding." |
+| 3 | Live Ops — second detection | The 18 IMPS rows land tagged **late · n min behind**; the P1 appears | "The late transfers link the access to the money, and to the same mule ring as last night." |
+| 4 | **Case → Case history** on the new P1 and on AL-0922-001 | Expand the newest revisions | "Every revision is kept; the database refuses edits. Here is why it changed: these rows arrived late, the chain gained E5, priority set by this rule. The M7 score is a reason to look first, not a finding." |
+| 5 | Live Ops | **Reset demo**, then arrival order **Duplicate delivery + a tampered re-send** → Play | "At-least-once delivery: every transfer arrives twice and one comes back with a changed amount." Point at **duplicate · absorbed** and **refused**. |
+| 6 | Terminal or `ml/reports/replay/replay_report.json` | Show `invariant: true` | "We replayed the same evening in order, late, duplicated, shuffled and reversed. All five converge to the same 85 cases, money totals, balances and M7 scores." |
+| 7 | Live Ops — Alibi panel | The pension camp | "The legitimate look-alike: same mobile changes, but ticket, eKYC and roster explain them. No alert, whatever the order." |
+| 8 | **Council** | **Convene AI agents** (needs `GROQ_API_KEY`), then **Harness trace** | "Agents on Groq argue the case, and the harness decides what counts: claims citing records the agent wasn't given, figures not in the cited record, or 'X committed fraud' are dropped and listed here." Without a key, say "Re-run council" uses the deterministic council, and show the trace from a run saved earlier. |
+| 9 | **Case → Account Aggregator** on AL-0918-001 | Request consent → Approve as the customer (demo) → Fetch → open the Council | "A customer-consented statement from another bank, through the RBI Account Aggregator flow. This FIP is a labelled synthetic one; live data needs a licensed FIU. The source-of-funds question the Council couldn't answer is now answered, and cited." |
+
+Before this segment: `make migrate` on an existing database, and `make train` once if `/health/ready`
+reports a model as anything other than ok or unregistered.

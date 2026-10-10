@@ -17,6 +17,7 @@ from app.alibi.engine import explain
 from app.brief.builder import BriefResult, brief_for
 from app.brief.context import BriefContext
 from app.core import audit
+from app.core.config import get_settings
 from app.core.db import engine, session_scope
 from app.lab.evaluate import evaluate_scenarios
 from app.loom.frames import Frames, load_frames
@@ -99,7 +100,7 @@ def compute(f: Frames, log=True, progress: Progress | None = None, models: bool 
         sig.append(R.signal("M1", [s.actor_id], [s.id], s.started_at, s.started_at, 0.7,
                             f"Session at {s.started_at:%a %H:%M} is rare for this person and role "
                             f"(share {s.share:.4f}; {int(s.late_prior)} prior late sessions)", session=s.id))
-    for s in nav[nav["percentile"] < 0.005].itertuples(index=False):
+    for s in nav[nav["percentile"] < get_settings().m2_signal_percentile].itertuples(index=False):
         sig.append(R.signal("M2", [s.employee_id], [s.session_id], None, None, 0.6,
                             f"Navigation in the bottom {s.percentile:.1%} for the role", session=s.session_id,
                             rare=s.rare))
@@ -382,18 +383,25 @@ def _json(obj):
     return _clean(obj)
 
 
-def record_run(res: dict, stats: dict) -> dict:
-    """Grade the run against ground truth, measure control friction, and log it (ScenarioRun + audit)."""
+def record_run(res: dict, stats: dict, trigger: dict | None = None) -> dict:
+    """Grade the run against ground truth, measure control friction, log it (ScenarioRun + audit), and
+    write a case revision for every alert whose case state changed (app.brief.revisions)."""
+    from app.brief import revisions
+
     f: Frames = res["frames"]
     report = evaluate_scenarios(res)
     queued_refs = {r for b in res["briefs"] if b.priority in ("P1", "P2", "P3")
                    for lk in b.draft.links for r in [*lk.refs, str(lk.event_id)]}
     report["controls_friction"] = friction(f, queued_refs, res["explanations"])
+    run_id = f"RUN-{datetime.now(UTC):%Y%m%d%H%M%S%f}"[:24]
+    with engine.begin() as conn:
+        report["revisions"] = revisions.record(conn, run_id, trigger or {"kind": "scheduled"})
     with session_scope() as db:
-        db.add(ScenarioRun(id=f"RUN-{datetime.now(UTC):%Y%m%d%H%M%S}", started_at=datetime.now(UTC),
-                           finished_at=datetime.now(UTC), results=_clean(report)))
+        db.add(ScenarioRun(id=run_id, started_at=datetime.now(UTC), finished_at=datetime.now(UTC), results=_clean(report)))
         audit.append(db, "system", "pipeline.run", payload={**stats, "scenarios_passed": report["summary"]["passed"],
-                                                            "scenarios_total": report["summary"]["total"]})
+                                                            "scenarios_total": report["summary"]["total"],
+                                                            "revisions": report["revisions"]})
+    report["run_id"] = run_id
     return report
 
 

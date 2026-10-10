@@ -231,7 +231,7 @@ def _truth() -> dict:
     return {r.strand: {"events": r.events, "cited": r.cited} for r in rows}
 
 
-def _detect(run: Run, t0: float, refs: dict[str, str] | None) -> dict:
+def _detect(run: Run, t0: float, refs: dict[str, str] | None, trigger: dict | None = None) -> dict:
     stage = _stage(run, t0)
     with engine.connect() as c:
         before = {r[0] for r in c.execute(text("SELECT id FROM alert"))}
@@ -246,10 +246,13 @@ def _detect(run: Run, t0: float, refs: dict[str, str] | None) -> dict:
                              f"{stats['evidence']:,} evidence items · one transaction")
     found = _findings(run, res, before, refs) if refs is not None else {}
     stage("lab", "running")
-    report = record_run(res, stats)
+    report = record_run(res, stats, trigger or {"kind": "reset" if refs is None else "live", "refs": list(refs or [])})
     s = report["summary"]
-    stage("lab", "done", f"{s['passed']}/{s['total']} scenario checks passed")
-    return {**found, "scenarios": {"passed": s["passed"], "total": s["total"]}}
+    stage("lab", "done", f"{s['passed']}/{s['total']} scenario checks passed · case revisions: "
+                         f"{report['revisions']['opened']} opened, {report['revisions']['revised']} revised, "
+                         f"{report['revisions']['withdrawn']} withdrawn")
+    return {**found, "scenarios": {"passed": s["passed"], "total": s["total"]}, "revisions": report["revisions"],
+            "detection_run": report["run_id"]}
 
 
 def play_feed(run: Run, speed: float, detect: bool = True, scope: str = "evening") -> None:
@@ -267,6 +270,8 @@ def play_feed(run: Run, speed: float, detect: bool = True, scope: str = "evening
                            "feed_end": items[-1].t.isoformat() if items else None})
         stage("ingest", "running")
         prev = items[0].t if items else None
+        late: dict[str, int] = {}
+        outcomes: dict[str, int] = {"NEW": 0, "DUPLICATE": 0, "CONFLICT": 0}
         for n, ev in enumerate(items, start=1):
             if run.cancel.is_set():
                 run.emit("cancelled", {"ingested": n - 1, "elapsed": round(time.perf_counter() - t0, 1)})
@@ -275,15 +280,22 @@ def play_feed(run: Run, speed: float, detect: bool = True, scope: str = "evening
                 time.sleep(min(max((ev.t - prev).total_seconds(), 0) / speed, MAX_GAP_S))
             prev = ev.t
             with engine.begin() as conn:
-                feed.ingest(conn, ev)
-            run.emit("event", {**ev.public(), "n": n})
+                rc = feed.deliver(conn, ev, run_id=run.id)
+            outcomes[rc.outcome] += 1
+            if rc.late:
+                late[rc.ref] = rc.late_by_s or 0
+            run.emit("event", {**ev.public(), "n": n, "receipt": rc.public()})
         if scope == "bank":
             stage("ingest", "done", f"{len(already)} rows already in Loom — the bank recorded them as they happened")
             refs = already
         else:
-            stage("ingest", "done", f"{len(items)} rows from {len({i.system for i in items})} source systems")
+            stage("ingest", "done", f"{outcomes['NEW']} rows from {len({i.system for i in items})} source systems"
+                                    + (f" · {outcomes['DUPLICATE']} duplicate(s) absorbed" if outcomes["DUPLICATE"] else "")
+                                    + (f" · {outcomes['CONFLICT']} conflict(s) refused" if outcomes["CONFLICT"] else ""))
             refs = {i.ref: i.source_table for i in items}
-        result = _detect(run, t0, refs) if detect else {}
+        trigger = {"kind": "live", "plan": scope, "refs": list(refs), "late": late,
+                   "duplicates": outcomes["DUPLICATE"], "conflicts": outcomes["CONFLICT"]}
+        result = _detect(run, t0, refs, trigger) if detect else {}
         alerts = result.pop("alerts", [])
         with session_scope() as db:
             audit.append(db, run.actor, "live.run", target=run.id,
@@ -403,6 +415,108 @@ def start_run(body: RunIn, p: CurrentUser, db: Annotated[Session, Depends(get_db
         raise HTTPException(status.HTTP_409_CONFLICT, "Tonight's feed has already been played — reset it first.")
     run = _start("feed", "evening", p.id, lambda r: play_feed(r, body.speed, body.detect, "evening"))
     return {"run_id": run.id}
+
+
+class ReplayIn(BaseModel):
+    plan: Literal["in-order", "late-link", "duplicates", "shuffled", "reverse"] = "late-link"
+    seed: int = Field(7, ge=0, le=1_000_000)
+    checkpoints: int = Field(2, ge=1, le=6, description="Detection runs spread over the deliveries")
+
+
+def replay_feed(run: Run, plan_name: str, seed: int, checkpoints: int) -> None:
+    """Deliver tonight's rows in a plan's arrival order (late, duplicated, shuffled…) and detect at its
+    checkpoints, streaming the same events as Play plus each row's delivery receipt (app.loom.replay)."""
+    from app.loom import replay
+
+    t0 = time.perf_counter()
+    try:
+        with SessionLocal() as db:
+            items = feed.pending(db, "evening")
+        plan = replay.build(items, plan_name, seed, checkpoints)
+        run.emit("start", {"run": run.id, "kind": "feed", "scope": "evening", "plan": plan.name,
+                           "description": plan.description, "started_at": run.started_at, "total": len(plan.deliveries),
+                           "checkpoints": plan.checkpoints, "speed": 0, "stages": STAGES})
+        stage = _stage(run, t0)
+        marks, refs, new_alerts, updated = set(plan.checkpoints), {}, [], []
+        pending = {"refs": [], "late": {}, "duplicates": 0, "conflicts": 0}
+        outcomes = {"NEW": 0, "DUPLICATE": 0, "CONFLICT": 0, "LATE": 0}
+        cps, result = [], {}
+        stage("ingest", "running")
+        for n, d in enumerate(plan.deliveries, start=1):
+            if run.cancel.is_set():
+                run.emit("cancelled", {"ingested": n - 1, "elapsed": round(time.perf_counter() - t0, 1)})
+                return
+            with engine.begin() as conn:
+                rc = feed.deliver(conn, d.item, d.arrived_at, run.id)
+            outcomes[rc.outcome] += 1
+            outcomes["LATE"] += rc.late
+            if rc.outcome == "NEW":
+                refs[d.item.ref] = d.item.source_table
+                pending["refs"].append(rc.ref)
+                if rc.late:
+                    pending["late"][rc.ref] = rc.late_by_s or 0
+            pending["duplicates"] += rc.outcome == "DUPLICATE"
+            pending["conflicts"] += rc.outcome == "CONFLICT"
+            run.emit("event", {**d.item.public(), "n": n, "copy": d.copy, "receipt": rc.public()})
+            if n in marks:
+                stage("ingest", "done", f"{n} deliveries · {outcomes['NEW']} rows in · {outcomes['LATE']} late · "
+                                        f"{outcomes['DUPLICATE']} duplicates absorbed · {outcomes['CONFLICT']} refused")
+                run.emit("checkpoint", {"after": n, "new_rows": len(pending["refs"]), "late": len(pending["late"]),
+                                        "duplicates": pending["duplicates"], "conflicts": pending["conflicts"]})
+                result = _detect(run, t0, refs, {"kind": "live", "plan": plan.name, "checkpoint": len(cps) + 1, **pending})
+                new_alerts += [a for a in result.get("new", []) if a not in new_alerts]
+                updated += [a for a in result.get("updated", []) if a not in updated and a not in new_alerts]
+                cps.append({"after": n, "new_alerts": result.get("new", []), "revisions": result.get("revisions"),
+                            "late": len(pending["late"]), "duplicates": pending["duplicates"],
+                            "conflicts": pending["conflicts"]})
+                pending = {"refs": [], "late": {}, "duplicates": 0, "conflicts": 0}
+                if n < len(plan.deliveries):
+                    stage("ingest", "running")
+        result.pop("alerts", None)
+        with session_scope() as db:
+            audit.append(db, run.actor, "live.run", target=run.id,
+                         payload={"scope": "evening", "plan": plan.name, "ingested": outcomes["NEW"],
+                                  "new_alerts": new_alerts, "updated_alerts": updated, "receipts": outcomes})
+        run.emit("done", {**result, "new": new_alerts, "updated": updated, "truth": _truth(), "plan": plan.name,
+                          "outcomes": outcomes, "checkpoints": cps, "ingested": outcomes["NEW"],
+                          "elapsed": round(time.perf_counter() - t0, 1)})
+    except Exception:
+        log.exception("live.replay.failed run=%s", run.id)
+        run.emit("failed", {"message": "The replay failed — see the API log for details."})
+    finally:
+        _release(run)
+
+
+@router.post("/replay", status_code=status.HTTP_202_ACCEPTED)
+def start_replay(body: ReplayIn, p: CurrentUser, db: Annotated[Session, Depends(get_db)]) -> dict:
+    """Play tonight's rows in a chosen arrival order — late, duplicated or shuffled — with detection checkpoints."""
+    _enabled()
+    st = feed.status(db)
+    if st["ingested"] or not st["pending"]:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Tonight's feed has already been played — reset it first.")
+    run = _start("replay", "evening", p.id, lambda r: replay_feed(r, body.plan, body.seed, body.checkpoints))
+    with session_scope() as s:
+        audit.append(s, p.id, "live.replay", target=run.id, payload=body.model_dump())
+    return {"run_id": run.id}
+
+
+@router.get("/receipts")
+def receipts(p: CurrentUser, db: Annotated[Session, Depends(get_db)], run_id: str | None = None,
+             limit: int = 500) -> dict:
+    """Every delivery and what ingest did with it: NEW, DUPLICATE (absorbed) or CONFLICT (refused); late or not."""
+    _enabled()
+    q = "SELECT ref, source_table, event_t, arrived_at, outcome, late, late_by_s, effect, run_id, detail FROM feed_receipt"
+    params: dict = {"n": min(max(limit, 1), 5000)}
+    if run_id:
+        q += " WHERE run_id = :r"
+        params["r"] = run_id
+    rows = db.execute(text(q + " ORDER BY id DESC LIMIT :n"), params).all()
+    counts = dict(db.execute(text("SELECT outcome, count(*) FROM feed_receipt" + (" WHERE run_id = :r" if run_id else "")
+                                  + " GROUP BY 1"), params).all())
+    return {"counts": counts, "receipts": [{"ref": r.ref, "table": r.source_table, "event_t": r.event_t.isoformat(),
+                                            "arrived_at": r.arrived_at.isoformat(), "outcome": r.outcome, "late": r.late,
+                                            "late_by_s": r.late_by_s, "effect": r.effect, "run_id": r.run_id,
+                                            "reason": (r.detail or {}).get("reason")} for r in rows]}
 
 
 @router.get("/compose/options")

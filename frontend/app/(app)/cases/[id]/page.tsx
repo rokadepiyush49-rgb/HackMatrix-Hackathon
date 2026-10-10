@@ -8,7 +8,9 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+import { AccountAggregatorPanel } from "@/components/aa/aa-panel";
 import { AlibiResolution, EvidenceTable, MissingEvidence, ProsecutionDefence, WhySuspicious } from "@/components/brief/brief";
+import { CaseHistory } from "@/components/brief/case-history";
 import { ChainRail, LaneLegend, type RailNode } from "@/components/chain/chain-rail";
 import { TimelineReplay } from "@/components/chain/timeline-replay";
 import { EntityGraph } from "@/components/graph/entity-graph";
@@ -244,6 +246,12 @@ export default function CaseCanvas() {
         <div className="eyebrow mb-2">Timeline replay</div>
         {replay ? <TimelineReplay replay={replay} asOf={asOf} onAsOf={setAsOf} /> : <Skeleton className="h-40" />}
       </Panel>
+
+      {/* case history (FIN-04) and consented statements */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <CaseHistory alertId={a.id} />
+        <AccountAggregatorPanel customerId={a.account?.customer_id} alertId={a.id} />
+      </div>
 
       {/* notes & activity */}
       <div className="grid gap-4 lg:grid-cols-2">

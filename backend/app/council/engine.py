@@ -53,6 +53,14 @@ RECORDS = {
 }
 
 
+def _ist(t: str) -> str:
+    """HH:MM in India time, as investigators read it (timestamps are stored in UTC)."""
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    return datetime.fromisoformat(t).astimezone(ZoneInfo("Asia/Kolkata")).strftime("%H:%M")
+
+
 @dataclass
 class Claim:
     id: str
@@ -129,6 +137,9 @@ class Council:
     def request(self, rnd: int, agent: str, key: str, reason: str) -> dict:
         label, system, ingested = RECORDS[key]
         result = self.look.get(key)
+        if result and result.get("connected"):  # e.g. source of funds once an Account Aggregator is connected
+            ingested = True
+            system = result.get("system", system)
         if not ingested:
             status, text, ev = "NOT_INGESTED", f"{label} is not connected to SUTRA — it must be collected manually.", []
         elif result and result.get("found"):
@@ -264,9 +275,11 @@ class Council:
                  "prove who was at the keyboard.", target="defence", evidence=own, claim="P1", status="CONTESTED")
         self.say(3, "RULING", "moderator", "Chain and money flow: supported by records. Attribution to the person: "
                  "contested pending telemetry. Recorded as dissent, not dropped.", evidence=[])
+        device = next((self.ev[c]["facts"].get("device") for c in own if self.ev[c].get("facts", {}).get("device")),
+                      None) or "the employee's issued device"
         self.sensitivity = [
             {"evidence": "Workstation / endpoint telemetry", "if": [
-                {"condition": "Session originated on LAP-221 with the employee's interactive login", "effect": "Attribution strengthens — person-level finding becomes possible"},
+                {"condition": f"Session originated on {device} with the employee's interactive login", "effect": "Attribution strengthens — person-level finding becomes possible"},
                 {"condition": "Remote-access tooling or another user on the device", "effect": "Credential-compromise hypothesis gains — attribution weakens; chain stands"}]},
             {"evidence": "Email approval metadata for the override request", "if": [
                 {"condition": "Request raised by the employee after the camp ended", "effect": "Intent to retain privilege — strengthens insider reading"},
@@ -294,8 +307,11 @@ class Council:
                    status="CONTESTED")
         self.find_claim("P1").counterargument = "Customer not yet contacted; SIM-swap unconfirmed."
         self.say(3, "RULING", "moderator", "Takeover pattern supported; customer authorisation contested until contacted.")
+        login = self.link("E1")
+        when = (f"shortly before {_ist(login['t'])}" if login and login.get("t")
+                else "shortly before the new-device login")
         self.sensitivity = [{"evidence": "Telecom SIM-swap confirmation", "if": [
-            {"condition": "SIM re-issued shortly before 02:14", "effect": "Takeover confirmed"},
+            {"condition": f"SIM re-issued {when}", "effect": "Takeover confirmed"},
             {"condition": "No SIM change", "effect": "Consider malware or credential phishing instead"}]}]
 
     def _mule(self) -> None:

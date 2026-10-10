@@ -5,7 +5,7 @@ DB    ?= sutra
 export PYTHONPATH := $(CURDIR)/backend:$(CURDIR)/data/kestrel_sim
 PY    := uv run --no-sync
 
-.PHONY: help setup db migrate seed train detect demo live-play live-reset bank-check api web test lint typecheck check up down images helm-lint tf-check clean
+.PHONY: help setup db migrate seed train detect demo live-play live-reset bank-check replay eval-behaviour api web test lint typecheck check up down images helm-lint tf-check clean
 
 help:            ## Show this help
 	@grep -E '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[1m%-10s\033[0m %s\n",$$1,$$2}'
@@ -39,6 +39,12 @@ live-reset:      ## Undo the live feed and re-detect — ready to demo again
 
 bank-check:      ## Run every mock-bank scenario through SUTRA, check outcomes, undo (docs/mock-bank)
 	$(PY) python -m app.cli bank-check
+
+replay:          ## Replay tonight's feed late, duplicated, shuffled and reversed; check it converges (ml/reports/replay)
+	$(PY) python -m app.cli replay
+
+eval-behaviour:  ## Evaluate M1/M2 against rule baselines on worlds 7–11 (ml/reports/m1_m2_eval.json)
+	$(PY) python -m app.cli eval-behaviour
 
 api:             ## Run the API on :8000
 	cd backend && $(PY) uvicorn app.main:app --reload --port 8000

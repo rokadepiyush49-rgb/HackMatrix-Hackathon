@@ -7,7 +7,8 @@ cases, chains and accounts that ground truth ties together — a takeover and th
 two rings that share accounts — always fall in the same fold, so no ring is learned on one side of a
 split and scored on the other.
 
-Writes ml/artifacts/*.joblib, ml/model_cards/*.json and, unless `evaluate=False`, the FIN-04 evaluation
+Writes each model as a candidate and promotes it only if it passes validation (app.ml.registry), then
+ml/model_cards/*.json and, unless `evaluate=False`, the FIN-04 evaluation
 in ml/reports/ (app.lab.heldout). Metrics are *synthetic* and are labelled as such everywhere they appear.
 """
 
@@ -18,7 +19,6 @@ import sys
 import time
 from datetime import UTC, datetime
 
-import joblib
 import numpy as np
 from lightgbm import LGBMClassifier
 from sklearn.linear_model import LogisticRegression
@@ -214,6 +214,23 @@ def train_m6(train: list[WorldData]) -> tuple[dict, dict]:
 # ── entry point ───────────────────────────────────────────────────────────
 
 
+def _promote_if_valid(name: str, art: dict, data: dict) -> dict:
+    """Candidate → validate against the gates and the approved model → promote, or keep the approved one."""
+    from app.ml import registry
+
+    path = registry.save_candidate(name, art)
+    current = registry.load(name).artifact
+    v = registry.validate_candidate(name, art, current)
+    if v.ok:
+        registry.promote(name, path, art, v, data)
+        print(f"  ✓ {name} promoted ({sum(c['ok'] for c in v.checks)}/{len(v.checks)} checks)")
+        return {"promoted": True, "checks": v.checks}
+    registry.reject(name, path, v)
+    failed = ", ".join(c["check"] for c in v.checks if not c["ok"])
+    print(f"  ✗ {name} NOT promoted — failed {failed}; the approved model keeps serving")
+    return {"promoted": False, "checks": v.checks}
+
+
 def train_all(size: str = "demo", evaluate: bool = True) -> dict:
     t0 = time.perf_counter()
     jobs = [(s, size, False) for s in TRAIN_SEEDS]
@@ -226,14 +243,19 @@ def train_all(size: str = "demo", evaluate: bool = True) -> dict:
 
     art_dir = get_settings().artifacts_path
     art_dir.mkdir(parents=True, exist_ok=True)
-    cards = REPO_ROOT / "ml" / "model_cards"
+    cards = (get_settings().reports_path / "model_cards") if get_settings().reports_dir else REPO_ROOT / "ml" / "model_cards"
     cards.mkdir(parents=True, exist_ok=True)
 
+    data = {"train_worlds": [w.name for w in train], "size": size,
+            "rows": {"chains": int(sum(len(w.chain_y) for w in train)), "accounts": int(sum(len(w.mule_y) for w in train)),
+                     "cases": int(sum(len(w.cases) for w in train))}}
+    decisions = {}
+
     m5, m5_card = train_m5(train)
-    joblib.dump(m5, art_dir / "chain_classifier.joblib")
+    decisions["chain_classifier"] = _promote_if_valid("chain_classifier", m5, data)
     print(f"▸ M5 chain classifier  {m5['metrics']}")
     m6, m6_card = train_m6(train)
-    joblib.dump(m6, art_dir / "mule_model.joblib")
+    decisions["mule_model"] = _promote_if_valid("mule_model", m6, data)
     print(f"▸ M6 mule-likeness     {m6['metrics']}")
 
     cases = [c for w in train for c in w.cases]
@@ -244,7 +266,7 @@ def train_all(size: str = "demo", evaluate: bool = True) -> dict:
     fits["M7-structure-past"] = fit_case_model(past, STRUCTURE_FEATURES, "M7 without detector features, past only")
     m7 = _m7_artifact(fits["M7"], TRAIN_SEEDS)
     m7["ablation"] = {"M7-structure": fits["M7-structure"]["metrics"]}
-    joblib.dump(m7, art_dir / "case_prioritiser.joblib")
+    decisions["case_prioritiser"] = _promote_if_valid("case_prioritiser", m7, data)
     print(f"▸ M7 case prioritiser  {fits['M7']['metrics']}")
     print(f"  without detectors    {fits['M7-structure']['metrics']}")
 
@@ -266,7 +288,7 @@ def train_all(size: str = "demo", evaluate: bool = True) -> dict:
     from app.ml.models import reload
 
     reload()
-    out = {"m5": m5["metrics"], "m6": m6["metrics"], "m7": m7["metrics"]}
+    out = {"m5": m5["metrics"], "m6": m6["metrics"], "m7": m7["metrics"], "promotion": decisions}
     if evaluate:
         from app.lab.heldout import evaluate as run_eval
 
