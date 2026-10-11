@@ -14,6 +14,10 @@ provider "aws" {
 data "aws_caller_identity" "current" {}
 
 resource "aws_s3_bucket" "state" {
+  #checkov:skip=CKV_AWS_18:No access-log bucket for the one-time bootstrap stack
+  #checkov:skip=CKV2_AWS_62:Nothing consumes state-bucket events
+  #checkov:skip=CKV2_AWS_61:Every state version is kept on purpose as a recovery point - the bucket is tiny
+  #checkov:skip=CKV_AWS_144:Versioned in one region - state can be rebuilt from code and imports
   bucket = "sutra-tfstate-${data.aws_caller_identity.current.account_id}"
   lifecycle { prevent_destroy = true }
 }

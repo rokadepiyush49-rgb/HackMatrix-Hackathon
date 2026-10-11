@@ -2,6 +2,7 @@
 # Postgres is SUTRA's only system of record: bitemporal events, the evidence book, the audit hash
 # chain and case state all need ACID transactions together (see docs/adr/002).
 resource "aws_security_group" "db" {
+  #checkov:skip=CKV2_AWS_5:Attached to the RDS instance through module.db (vpc_security_group_ids)
   name_prefix = "${local.name}-db-"
   description = "PostgreSQL from EKS nodes/pods only"
   vpc_id      = module.vpc.vpc_id
@@ -78,6 +79,7 @@ resource "aws_db_instance_automated_backups_replication" "dr" {
 }
 
 resource "aws_kms_key" "dr" {
+  #checkov:skip=CKV2_AWS_64:Default key policy on purpose - IAM policies in this account grant its use
   count                   = var.enable_dr ? 1 : 0
   provider                = aws.dr
   description             = "${local.name}: DR copies (backups, evidence replicas)"
@@ -114,6 +116,7 @@ resource "random_password" "cache" {
 }
 
 resource "aws_elasticache_replication_group" "cache" {
+  #checkov:skip=CKV2_AWS_50:Multi-AZ failover follows var.db_multi_az - on in prod, one node in staging to save cost
   replication_group_id       = local.name
   description                = "SUTRA shared counters"
   engine                     = "valkey"
@@ -150,6 +153,7 @@ resource "random_password" "pii_hmac" {
 }
 
 resource "aws_secretsmanager_secret" "app" {
+  #checkov:skip=CKV2_AWS_57:Values come from Terraform random_password - rotate by re-applying with a coordinated rollout
   name                    = "sutra/${var.env}/app"
   description             = "SUTRA runtime secrets (DB URL, JWT and PII-HMAC keys, cache URI, LLM key)"
   kms_key_id              = aws_kms_key.data.arn

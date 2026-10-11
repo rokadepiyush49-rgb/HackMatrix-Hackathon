@@ -34,6 +34,7 @@ module "vpc" {
 }
 
 resource "aws_security_group" "endpoints" {
+  #checkov:skip=CKV2_AWS_5:Attached to the interface endpoints through module.endpoints (security_group_ids)
   name_prefix = "${local.name}-vpce-"
   description = "Interface VPC endpoints: HTTPS from inside the VPC only"
   vpc_id      = module.vpc.vpc_id
