@@ -211,12 +211,13 @@ def customers(db: Db, q: str = "") -> list[dict]:
 class CustomerLogin(BaseModel):
     customer_id: str = Field(..., max_length=16)
     new_device: bool = False
+    city: str | None = Field(None, max_length=40, description="Where the sign-in comes from; the customer's own city if omitted")
 
 
 @router.post("/customer/login")
 def customer_login(body: CustomerLogin, db: Db) -> dict:
     _enabled()
-    out = _do(db, bank.customer_login, body.customer_id, body.new_device)
+    out = _do(db, bank.customer_login, body.customer_id, body.new_device, body.city)
     token = _encode(body.customer_id, "bank", 120, {"kind": "customer", "sid": out["session_id"], "device": out["device"]})
     return {**out, "token": token}
 

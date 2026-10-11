@@ -169,7 +169,8 @@ def _findings(run: Run, res: dict, before: set[str], refs: dict[str, str]) -> di
     for s in sorted(sig, key=lambda s: -s["strength"]):
         d = DETECTORS.get(s["detector"])
         run.emit("signal", {"detector": s["detector"], "name": d.name if d else s["detector"],
-                            "family": s["family"], "strength": s["strength"], "summary": s["summary"]})
+                            "family": s["family"], "strength": s["strength"], "summary": s["summary"],
+                            "refs": [r for r in s["event_refs"] if r in refs]})
 
     ex = res["explanations"]
     accesses = ex[ex["access_event_id"].isin([r for r, t in refs.items() if t == "access_event"])]

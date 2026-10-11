@@ -698,7 +698,11 @@ export interface LiveResult {
 
 export interface LiveVerdict { outcome: "alert" | "watch" | "updated" | "explained" | "signals"; headline: string; detail: string }
 
-export interface LiveSignal { detector: string; name: string; family: string; strength: number; summary: string }
+export interface LiveSignal {
+  detector: string; name: string; family: string; strength: number; summary: string;
+  /** The run's own rows this signal cites. */
+  refs?: string[];
+}
 
 // ── Your input (compose) ─────────────────────────────────────────────────
 
