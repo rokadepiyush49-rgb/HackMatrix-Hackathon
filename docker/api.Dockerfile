@@ -76,7 +76,8 @@ WORKDIR /app/backend
 EXPOSE 8000
 
 # One process per container: Kubernetes scales replicas, so no gunicorn worker pool inside.
-# --proxy-headers: trust X-Forwarded-For from the ALB so rate limits key on the real client.
+# --proxy-headers: rate limits key on the client address in X-Forwarded-For. Only the web pods can reach
+# the API (NetworkPolicy), and the web BFF sends exactly one address: the one the ALB saw.
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", \
      "--proxy-headers", "--forwarded-allow-ips", "*", \
      "--no-server-header", "--no-access-log", "--timeout-graceful-shutdown", "25"]

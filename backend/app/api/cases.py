@@ -178,6 +178,8 @@ def review(case_id: str, body: Review, db: Annotated[Session, Depends(get_db)],
         raise HTTPException(409, "This case has no decision waiting for review")
     if p.id == c.assignee:
         raise HTTPException(409, "Four-eyes rule: the reviewer must be a different person from the investigator")
+    if body.approve and "cases:decide" not in p.capabilities:
+        raise HTTPException(403, f"Your role ({p.role}) can return a decision for more work but not approve it")
     c.reviewer = p.id
     if body.approve:
         c.state = DECISIONS[c.decision]

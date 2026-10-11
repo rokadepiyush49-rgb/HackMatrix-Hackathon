@@ -17,7 +17,7 @@ from app.api.common import alert_full, iso, latest_run
 from app.copilot.engine import ask, str_draft
 from app.core import audit
 from app.core.db import SessionLocal, get_db
-from app.core.security import CurrentUser, Principal, require
+from app.core.security import CurrentUser, Investigator, Principal, require
 from app.council.engine import AGENTS, MODERATOR, RECORDS, Council
 from app.loom.models import (
     Account,
@@ -325,7 +325,7 @@ class FlipIn(BaseModel):
 
 
 @router.post("/lab/flip")
-def flip(body: FlipIn, p: CurrentUser, db: Annotated[Session, Depends(get_db)]) -> dict:
+def flip(body: FlipIn, p: Investigator, db: Annotated[Session, Depends(get_db)]) -> dict:
     """Counterfactual: remove the twin's explaining records and re-run Alibi → Needle → Brief for it."""
     from app.alibi.engine import explain
     from app.brief.builder import brief_for
@@ -385,7 +385,7 @@ class AskIn(BaseModel):
 
 @router.post("/copilot/ask")
 def copilot_ask(body: AskIn, db: Annotated[Session, Depends(get_db)],
-                p: Annotated[Principal, Depends(require("cases:read"))]) -> dict:
+                p: Annotated[Principal, Depends(require("copilot:use"))]) -> dict:
     detail = alert_full(db, body.alert_id)
     detail["mend"] = _mend(db, detail, [])
     ans = ask(detail, body.question).as_dict()
@@ -401,7 +401,7 @@ class StrIn(BaseModel):
 
 @router.post("/copilot/str")
 def copilot_str(body: StrIn, db: Annotated[Session, Depends(get_db)],
-                p: Annotated[Principal, Depends(require("cases:read"))]) -> dict:
+                p: Annotated[Principal, Depends(require("str:draft"))]) -> dict:
     detail = alert_full(db, body.alert_id)
     detail["mend"] = _mend(db, detail, [])
     out = str_draft(detail)

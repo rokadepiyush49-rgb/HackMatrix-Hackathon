@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 
-import { ACCESS, API, refresh } from "@/lib/server/session";
+import { ACCESS, API, clientHeaders, refresh } from "@/lib/server/session";
 
 // Backend-for-frontend pass-through: attaches the httpOnly access token, refreshes it once on
 // 401, and streams the upstream body back unchanged (JSON, PDFs and Server-Sent Events alike).
@@ -10,9 +10,15 @@ async function forward(request: Request, ctx: RouteContext<"/api/sutra/[...path]
   if (path[0] === "auth" && path[1] === "login") {
     return Response.json({ detail: "Use /api/session to sign in" }, { status: 400 });
   }
+  // "." and ".." survive encodeURIComponent and would resolve outside /api/v1. Next normalises them before
+  // routing today; refuse them here too, so the API boundary does not depend on that.
+  if (path.some((p) => p === "." || p === "..")) {
+    return Response.json({ detail: "Not found" }, { status: 404 });
+  }
   const url = new URL(request.url);
   const target = `${API}/api/v1/${path.map(encodeURIComponent).join("/")}${url.search}`;
   const body = ["GET", "HEAD"].includes(request.method) ? undefined : await request.arrayBuffer();
+  const client = await clientHeaders();
 
   const send = async (token?: string) =>
     fetch(target, {
@@ -20,6 +26,7 @@ async function forward(request: Request, ctx: RouteContext<"/api/sutra/[...path]
       headers: {
         "Content-Type": request.headers.get("content-type") ?? "application/json",
         Accept: request.headers.get("accept") ?? "*/*",
+        ...client,
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body,

@@ -35,7 +35,7 @@ from app.api.common import TYPOLOGY_LABEL
 from app.core import audit
 from app.core.config import get_settings
 from app.core.db import SessionLocal, engine, get_db, session_scope
-from app.core.security import CurrentUser
+from app.core.security import CurrentUser, Investigator
 from app.loom import compose, feed
 from app.loom.frames import load_frames
 from app.loom.models import AuditLog, FeedEvent
@@ -410,7 +410,7 @@ def live_feed(p: CurrentUser, db: Annotated[Session, Depends(get_db)], reveal: b
 
 
 @router.post("/runs", status_code=status.HTTP_202_ACCEPTED)
-def start_run(body: RunIn, p: CurrentUser, db: Annotated[Session, Depends(get_db)]) -> dict:
+def start_run(body: RunIn, p: Investigator, db: Annotated[Session, Depends(get_db)]) -> dict:
     _enabled()
     if not feed.status(db)["pending"]:
         raise HTTPException(status.HTTP_409_CONFLICT, "Tonight's feed has already been played — reset it first.")
@@ -489,7 +489,7 @@ def replay_feed(run: Run, plan_name: str, seed: int, checkpoints: int) -> None:
 
 
 @router.post("/replay", status_code=status.HTTP_202_ACCEPTED)
-def start_replay(body: ReplayIn, p: CurrentUser, db: Annotated[Session, Depends(get_db)]) -> dict:
+def start_replay(body: ReplayIn, p: Investigator, db: Annotated[Session, Depends(get_db)]) -> dict:
     """Play tonight's rows in a chosen arrival order — late, duplicated or shuffled — with detection checkpoints."""
     _enabled()
     st = feed.status(db)
@@ -528,7 +528,7 @@ def compose_options(p: CurrentUser, db: Annotated[Session, Depends(get_db)]) -> 
 
 
 @router.post("/compose", status_code=status.HTTP_202_ACCEPTED)
-def compose_run(body: ComposeIn, p: CurrentUser, db: Annotated[Session, Depends(get_db)],
+def compose_run(body: ComposeIn, p: Investigator, db: Annotated[Session, Depends(get_db)],
                 dry_run: bool = False) -> dict:
     """Build the rows for these choices. With `dry_run`, only describe them; otherwise stage, play and detect."""
     _enabled()
@@ -555,7 +555,7 @@ def compose_run(body: ComposeIn, p: CurrentUser, db: Annotated[Session, Depends(
 
 
 @router.post("/detect", status_code=status.HTTP_202_ACCEPTED)
-def detect_bank(p: CurrentUser, db: Annotated[Session, Depends(get_db)]) -> dict:
+def detect_bank(p: Investigator, db: Annotated[Session, Depends(get_db)]) -> dict:
     """Run detection now over what Kestrel Bank has recorded (the scheduled job would, every 15 minutes)."""
     _enabled()
     if not feed.status(db)["bank"]["ingested"]:
@@ -574,7 +574,7 @@ def bank_activity(p: CurrentUser, db: Annotated[Session, Depends(get_db)]) -> li
 
 
 @router.post("/reset", status_code=status.HTTP_202_ACCEPTED)
-def start_reset(p: CurrentUser, db: Annotated[Session, Depends(get_db)],
+def start_reset(p: Investigator, db: Annotated[Session, Depends(get_db)],
                 scope: Literal["all", "yours", "bank"] = "all") -> dict:
     _enabled()
     st = feed.status(db)
@@ -587,7 +587,7 @@ def start_reset(p: CurrentUser, db: Annotated[Session, Depends(get_db)],
 
 
 @router.post("/runs/{run_id}/cancel")
-def cancel_run(run_id: str, p: CurrentUser) -> dict:
+def cancel_run(run_id: str, p: Investigator) -> dict:
     _enabled()
     run = _runs.get(run_id)
     if run is None:

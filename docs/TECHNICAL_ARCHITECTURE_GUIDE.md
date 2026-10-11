@@ -1218,7 +1218,8 @@ sequenceDiagram
 ```
 
 - `app/api/session/route.ts` — sign in/out; in demo mode the demo password comes from the **server**
-  environment and is never sent to the browser. Sign-out calls `/auth/logout` (audited) then clears cookies.
+  environment and is never sent to the browser. Sign-out calls `/auth/logout`, which ends the sign-in session (every token carrying its `sid` is refused
+  from then on) and audits it, then clears cookies.
 - `app/api/sutra/[...path]/route.ts` — catch-all proxy: attaches the token, refreshes once on 401, streams
   the body (JSON, PDFs **and** Server-Sent Events, with buffering disabled).
 - `app/api/bank/[...path]/route.ts` — separate proxy for the mock bank with its own token.
@@ -1487,9 +1488,9 @@ From `docs/audit/IMPLEMENTATION_STATUS.md`:
 | Account Aggregator | **Partially done** — synthetic FIP works; Setu sandbox **blocked** (credentials); live data **blocked** (needs a regulated FIU) |
 | Docker / compose / CI | **Done**; Helm/Argo/Terraform **validated**, not shown deployed |
 | Council checkpoint/resume after API restart | Pending |
-| Refresh-token revocation on sign-out (`jti` denylist) | Pending |
+| Refresh-token revocation on sign-out (per-session `sid`, `revoked_session`) | Done |
 | Drift monitoring for M5/M6/M7 (PSI per feature) | Pending |
-| Capability check on Live Ops routes (demo-only today) | Pending |
+| Capability check on Live Ops routes (demo-only today) | Done (`cases:investigate`) |
 | Frontend automated tests | Pending |
 
 **Wording to use when presenting:** "LLM agents on Groq when a key is configured; tested with a scripted model
@@ -1506,7 +1507,7 @@ here." · "The real AA consent flow on a labelled synthetic FIP." · Every metri
 | Synthetic-only evaluation | No legal real data; full ground truth | Shadow-mode pilot on real data with bank partner |
 | Small positive classes | Inherent to fraud | More worlds, bootstrap intervals (already reported) |
 | Run progress in memory | No broker to operate | Persist council checkpoints per round |
-| Stateless JWTs (refresh valid until expiry) | Simplicity; SSO in production | `jti` denylist in Postgres/Valkey; bank OIDC SSO |
+| JWTs revocable per sign-in session; a stolen token works until sign-out or expiry | Simplicity; SSO in production | Bank OIDC SSO |
 | LLM off in prod | India residency not yet available for the chosen model | Self-hosted open-weight model (e.g. gpt-oss) in an Indian region, or India-resident Bedrock when offered |
 | Rules need maintenance | Readable, auditable | Scenario twins catch regressions in CI |
 | No drift monitoring | Models are only promoted, never auto-retrained | PSI report per run; propose (never auto-deploy) retraining |
