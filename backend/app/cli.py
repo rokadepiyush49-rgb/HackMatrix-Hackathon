@@ -77,6 +77,56 @@ def cmd_live_reset(args) -> None:
     _live("reset")
 
 
+def cmd_replay(args) -> None:
+    """Replay tonight's feed in several arrival orders and check every one converges to the same cases."""
+    from pathlib import Path
+
+    from app.core.config import REPO_ROOT
+    from app.loom import replay
+
+    def show(event: str, data: dict) -> None:
+        if event == "plan":
+            print(f"▸ Plan {data['plan']}")
+        elif event == "checkpoint":
+            print(f"  after {data['after']:>3} deliveries: {data['new_rows']} new rows ({data['late']} late), "
+                  f"{data['duplicates']} duplicates absorbed, {data['conflicts']} conflicts refused — detecting …")
+        elif event == "detected":
+            r = data["revisions"]
+            print(f"    detection {data['seconds']}s · revisions: {r['opened']} opened, {r['revised']} revised, "
+                  f"{r['withdrawn']} withdrawn · new alerts: {', '.join(data['new_alerts']) or 'none'}")
+
+    plans = [p.strip() for p in args.plans.split(",") if p.strip()]
+    out = Path(args.out) if args.out else REPO_ROOT / "ml" / "reports" / "replay"
+    report = replay.replay(plans, seed=args.seed, checkpoints=args.checkpoints, out_dir=out, keep=args.keep,
+                           listener=show)
+    for name, v in report["comparison_to_in_order"].items():
+        mark = "✓" if v["identical"] else "✗"
+        print(f"{mark} {name:<11} vs in-order: {v['cases_compared']} cases compared · "
+              + ("identical" if v["identical"] else f"totals differ {v['totals_differ']} · cases differ {v['cases_differ'][:5]}"))
+    print(f"{'✓' if report['invariant'] else '✗'} Arrival-order invariance: "
+          f"{'every plan converged to the same state' if report['invariant'] else 'FAILED'} · report: {out}")
+    if not report["invariant"]:
+        raise SystemExit(1)
+
+
+def cmd_eval_behaviour(args) -> None:
+    """M1/M2 against rule baselines and the M2 leave-one-session-out alternative, on worlds 7–11."""
+    from app.core.config import REPO_ROOT
+    from app.lab.behaviour_eval import METHODS, evaluate
+
+    out = REPO_ROOT / "ml" / "reports" / "m1_m2_eval.json"
+    r = evaluate(out_path=out)
+    c = r["counts"]["pooled"]
+    print(f"▸ {c['sessions']:,} staff sessions · {c['positives']} insider sessions · {c['lookalike_sessions']} look-alikes")
+    for m in METHODS:
+        x = r["pooled"][m]
+        print(f"  {m:<12} PR-AUC {x.get('pr_auc')!s:<6} flagged {x['flagged']:>5} · P {x['precision']} R {x['recall']} "
+              f"· look-alikes flagged {x['lookalikes_flagged']}")
+    d = r["decision"]
+    print(f"{'✗ Replace' if d['replace_m2'] else '✓ Keep'} M2 (M2-LOO ΔPR-AUC {d['m2_loo_pr_auc_delta']}, "
+          f"worlds won {d['worlds_won']}) · report: {out}")
+
+
 def cmd_bank_check(args) -> None:
     """Run every mock-bank scenario, run SUTRA once, compare each outcome with what it should be, undo."""
     from datetime import UTC, datetime
@@ -149,6 +199,16 @@ def main(argv: list[str] | None = None) -> None:
     lp.add_argument("--speed", type=float, default=0.0, help="simulated seconds per second; 0 = no pauses")
     lp.set_defaults(fn=cmd_live_play)
     sub.add_parser("live-reset", help="Undo the live feed and re-detect").set_defaults(fn=cmd_live_reset)
+    rp = sub.add_parser("replay", help="Replay tonight's feed in different arrival orders and check they converge")
+    rp.add_argument("--plans", default="late-link,duplicates,shuffled,reverse",
+                    help="comma-separated: in-order, late-link, duplicates, shuffled, reverse (in-order always runs)")
+    rp.add_argument("--seed", type=int, default=7)
+    rp.add_argument("--checkpoints", type=int, default=2, help="detection runs per plan")
+    rp.add_argument("--out", help="report directory (default ml/reports/replay)")
+    rp.add_argument("--keep", action="store_true", help="leave the last plan's rows in place")
+    rp.set_defaults(fn=cmd_replay)
+    sub.add_parser("eval-behaviour", help="Evaluate M1/M2 against rule baselines on worlds 7–11").set_defaults(
+        fn=cmd_eval_behaviour)
     bc = sub.add_parser("bank-check", help="Run every mock-bank scenario through SUTRA and check the outcomes")
     bc.add_argument("--keep", action="store_true", help="leave the scenarios' records in place afterwards")
     bc.set_defaults(fn=cmd_bank_check)

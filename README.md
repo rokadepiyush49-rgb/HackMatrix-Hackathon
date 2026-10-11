@@ -43,6 +43,7 @@ and argue every alert both ways: **with evidence, never a score.**
 - [Tech stack](#tech-stack)
 - [Production platform](#production-platform)
 - [Live demo: raw events to a P1](#live-demo-raw-events-to-a-p1)
+- [Final round (FIN-04): what changed](#final-round-fin-04-what-changed)
 - [Getting started](#getting-started)
 - [Repository layout](#repository-layout)
 - [Architecture decisions](#architecture-decisions)
@@ -238,7 +239,7 @@ or its look-alikes.
 |---|---|
 | **Backend** | Python 3.12 · FastAPI · SQLAlchemy 2 · Alembic · PostgreSQL (psycopg 3) · Pydantic Settings · PyJWT · slowapi |
 | **Detection & ML** | pandas · NumPy · NetworkX · scikit-learn · LightGBM · RapidFuzz |
-| **AI (optional)** | Anthropic SDK (Claude), behind a cite-or-drop verifier |
+| **AI (optional)** | Groq (`openai/gpt-oss-120b`) for Investigation Council agents inside a grounding harness; Anthropic SDK (Claude) for Ask SUTRA. Both behind cite-or-drop verification |
 | **Reports** | ReportLab (PDF evidence packs) |
 | **Frontend** | Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · TanStack Query · Radix UI · React Flow · Motion · Recharts · cmdk · Poppins |
 | **Tooling** | uv workspace · npm · Ruff · pytest · ESLint · pre-commit |
@@ -288,6 +289,14 @@ Press **Play** and three things happen:
 
 **Kestrel Bank** (`/bank`) is a working test bank to try SUTRA by hand: a staff core-banking console (sign in from the branch or over VPN, search customers, change mobile numbers and limits, raise tickets, capture eKYC) and customer NetBanking (sign in on a usual or a new phone, reset the password, add payees, send money). It enforces what a bank would — permissions, balances, transaction limits, payees — and records every action into Loom as it happens. In Live Ops → **Kestrel Bank**, press **Run detection now** and see what SUTRA makes of it. It also has a small REST API, ten one-click test scenarios and `make bank-check`, which runs them all through SUTRA and checks the outcomes ([`docs/mock-bank`](docs/mock-bank/README.md)).
 
+**Fraud Simulator** (`/simulate`) turns Kestrel Bank into a guided story for an audience. Pick a fraud (an insider
+takeover, an outsider takeover, a money-mule pass-through) or its legitimate twin (a pension camp), tune it, and commit
+it one action at a time while the target account's balance, mobile and limit change live and every record the bank
+writes is shown. Then **Run SUTRA detection**: the same pipeline raises the signals and the alert, a case is opened on
+every queued alert, and a ten-stop journey leads from the Signal Desk through the case file, Alibi, the Money Trail, the
+Council and Control Lab to a four-eyes decision. Detection and case logic are untouched: the simulator only drives the
+bank's API, the Live Ops detection run and the case API. Walkthrough in [`docs/demo/DEMO_SCRIPT.md`](docs/demo/DEMO_SCRIPT.md).
+
 Alert IDs, human triage and open cases survive every re-run ([ADR 016](docs/adr/016-live-feed-demo.md)).
 **Reset demo** undoes the evening exactly.
 
@@ -298,6 +307,27 @@ so it works offline and no case text leaves the machine.
 The on-site walkthrough, with timings, talking points and fallbacks, is in
 [`docs/demo/DEMO_SCRIPT.md`](docs/demo/DEMO_SCRIPT.md). Rehearse from a terminal with
 `make live-play` and `make live-reset`.
+
+## Final round (FIN-04): what changed
+
+The final-round work, with its evidence and test results, is in
+[`docs/audit/IMPLEMENTATION_STATUS.md`](docs/audit/IMPLEMENTATION_STATUS.md). The starting audit is in
+[`docs/audit/PROJECT_AUDIT.md`](docs/audit/PROJECT_AUDIT.md).
+
+- **Incremental ingest** that converges whatever the arrival order. Every delivery gets a receipt (new,
+  duplicate absorbed, conflict refused, late), and **append-only case revisions** say why each case
+  changed. `make replay` proves the convergence; Live Ops can play the evening late, duplicated or
+  shuffled ([ADR 018](docs/adr/018-incremental-ingest-and-case-revisions.md)).
+- **Investigation Council agents on Groq**, inside a harness that checks every citation, figure and
+  status, enforces budgets and tool allowlists, and falls back to the deterministic council
+  ([ADR 019](docs/adr/019-council-agents-and-harness.md),
+  [architecture](docs/architecture/INVESTIGATION_COUNCIL.md)).
+- **Model registry**: candidates are validated before promotion, archived and rollback-able, and refused
+  if altered ([ADR 022](docs/adr/022-model-lifecycle.md), [lifecycle](docs/ml/MODEL_LIFECYCLE.md)).
+  **M1/M2** were measured against rule baselines, and M2's signal threshold was recalibrated on held-out
+  worlds ([ADR 021](docs/adr/021-behavioural-baselines-m1-m2.md)).
+- **Account Aggregator**: consent → fetch → evidence, demoed on a labelled synthetic FIP
+  ([ADR 023](docs/adr/023-account-aggregator.md), [integration](docs/integrations/ACCOUNT_AGGREGATOR.md)).
 
 ## Getting started
 
@@ -351,6 +381,9 @@ investigator) first, then **Suresh Iyer** (vigilance) to experience the four-eye
 > Postgres needs a user and password? Set `SUTRA_DATABASE_URL` in `.env`,
 > e.g. `postgresql+psycopg://user:password@localhost:5432/sutra`.
 > Claude-written answers in Ask SUTRA are optional: add `ANTHROPIC_API_KEY` to `.env`.
+> Council agents are optional too: add `GROQ_API_KEY` to `.env` (server-side only, never `frontend/`).
+> The Account Aggregator demo needs no setup; `.env.example` lists the Setu sandbox settings.
+> Upgrading a database from before the final round? Run `make migrate`: the final round adds tables.
 
 ### Make targets
 
@@ -362,6 +395,8 @@ investigator) first, then **Suresh Iyer** (vigilance) to experience the four-eye
 | `make train` | Train M5, M6 and M7 on worlds 7–10, then evaluate M7 against the rule baselines (`ml/reports/`) |
 | `make detect` | Run the pipeline: signals → chains → alibi → briefs |
 | `make live-play` / `make live-reset` | Stream the held-back evening and detect / undo it and re-detect (what Live Ops does) |
+| `make replay` | Replay the evening late, duplicated, shuffled and reversed; check every order converges (`ml/reports/replay`) |
+| `make eval-behaviour` | Evaluate M1/M2 against rule baselines on worlds 7–11 (`ml/reports/m1_m2_eval.json`) |
 | `make api` / `make web` | Start the API on :8000 / the web app on :3000 |
 | `make test` | Backend tests, including the scenario twins |
 | `make lint` / `make typecheck` | Ruff + ESLint / TypeScript checks |

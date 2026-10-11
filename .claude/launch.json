@@ -19,6 +19,24 @@
       ],
       "port": 3000,
       "autoPort": true
+    },
+    {
+      "name": "api-win",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": [
+        "/c",
+        "cd backend && set PYTHONPATH=.;..\\data\\kestrel_sim&& uv run --no-sync uvicorn app.main:app --port 8010"
+      ],
+      "port": 8010
+    },
+    {
+      "name": "web-win",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": [
+        "/c",
+        "cd frontend && set SUTRA_API_URL=http://127.0.0.1:8010&& npx next start -p 3002"
+      ],
+      "port": 3002
     }
   ]
 }

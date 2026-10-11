@@ -98,6 +98,17 @@ def test_bank_sessions_are_separate_from_sutra(client, as_user, conn, monkeypatc
     assert client.get(f"{API}/bank/clock").status_code == 404
 
 
+def test_customer_login_records_where_it_came_from(client, conn):
+    """The Fraud Simulator signs an outsider in from another city; the session row must say so."""
+    away = client.post(f"{API}/bank/customer/login", json={"customer_id": CUSTOMER, "new_device": True, "city": "Kolkata"})
+    assert away.status_code == 200, away.text
+    home = client.post(f"{API}/bank/customer/login", json={"customer_id": CUSTOMER, "new_device": False}).json()
+    city = dict(conn.execute(text("SELECT id, geo_city FROM session WHERE id = ANY(:s)"),
+                             {"s": [away.json()["session_id"], home["session_id"]]}).all())
+    assert city[away.json()["session_id"]] == "Kolkata"
+    assert city[home["session_id"]] != "Kolkata", "without a city the customer signs in from home"
+
+
 # ── the REST contract used by scripts and the test dashboard ───────────────
 
 

@@ -54,6 +54,45 @@ class Settings(BaseSettings):
     llm_enabled: bool = True
     anthropic_api_key: str = Field("", validation_alias="ANTHROPIC_API_KEY")
 
+    # Investigation Council agents (app.council.agentic) run on Groq. The key stays on the server: it is
+    # never returned by the API, logged or shown to the browser. Without a key the council is deterministic.
+    groq_api_key: str = Field("", validation_alias="GROQ_API_KEY", repr=False)
+    groq_model: str = Field("openai/gpt-oss-120b", validation_alias="GROQ_MODEL")
+    groq_base_url: str = Field("https://api.groq.com/openai/v1", validation_alias="GROQ_BASE_URL")
+    groq_timeout_s: float = Field(30.0, validation_alias="GROQ_TIMEOUT_S", gt=0, le=300)
+    groq_max_retries: int = Field(2, validation_alias="GROQ_MAX_RETRIES", ge=0, le=5)
+    # 0 = take the context window from app.council.llm.MODEL_LIMITS (verified per model); set it for other models.
+    groq_context_window: int = Field(0, validation_alias="GROQ_CONTEXT_WINDOW", ge=0)
+    groq_reasoning_effort: Literal["", "low", "medium", "high"] = Field("low", validation_alias="GROQ_REASONING_EFFORT")
+    # auto: agents when a Groq key is set, the deterministic council otherwise. llm: agents (fails over per
+    # agent to the deterministic council). deterministic: never call the LLM.
+    council_engine: Literal["auto", "llm", "deterministic"] = "auto"
+    council_max_calls: int = Field(24, ge=1, le=200)  # LLM calls per investigation, retries included
+    council_token_budget: int = Field(120_000, ge=1_000)  # prompt + completion tokens per investigation
+    council_deadline_s: float = Field(240.0, gt=0, le=1800)  # whole investigation, rate-limit waits included
+    council_max_output_tokens: int = Field(3_000, ge=256, le=32_000)  # per call; gpt-oss reasoning counts here
+    council_call_input_tokens: int = Field(6_000, ge=1_000)  # per call; keeps each call under a free-tier TPM
+    council_context_fraction: float = Field(0.5, gt=0.05, le=0.95)  # never fill more than this of the window
+    council_concurrency: int = Field(2, ge=1, le=8)
+
+    # Account Aggregator (app.integrations.aa). "synthetic" is a labelled demo FIP that works offline and only in
+    # demo mode. "setu" talks to Setu's FIU sandbox and needs credentials from Setu's Bridge; live data additionally
+    # needs a regulated, Sahamati-certified FIU (docs/integrations/ACCOUNT_AGGREGATOR.md).
+    aa_provider: Literal["synthetic", "setu"] = "synthetic"
+    aa_setu_base_url: str = ""
+    aa_setu_client_id: str = Field("", repr=False)
+    aa_setu_client_secret: str = Field("", repr=False)
+    aa_setu_product_instance_id: str = ""
+    aa_data_life_days: int = Field(30, ge=1, le=365)  # fetched statements are purged after this, or on revocation
+
+    # M2 raises a signal for sessions in the bottom 2% of their role's navigation likelihood. 0.5% (the original
+    # value) caught none of 24 insider sessions on unseen worlds 10–11; 2%, chosen on worlds 7–9, caught all 24
+    # with no look-alike flagged and left M7's FIN-04 results unchanged (ml/reports/m1_m2_eval.json, ADR 021).
+    m2_signal_percentile: float = Field(0.02, gt=0, lt=0.5)
+    # Where models and evaluation reports are written; empty = ml/artifacts and ml/reports (experiments set these).
+    artifacts_dir: str = ""
+    reports_dir: str = ""
+
     sim_seed: int = 42
     sim_size: str = "demo"
 
@@ -88,7 +127,11 @@ class Settings(BaseSettings):
 
     @property
     def artifacts_path(self) -> Path:
-        return REPO_ROOT / "ml" / "artifacts"
+        return Path(self.artifacts_dir) if self.artifacts_dir else REPO_ROOT / "ml" / "artifacts"
+
+    @property
+    def reports_path(self) -> Path:
+        return Path(self.reports_dir) if self.reports_dir else REPO_ROOT / "ml" / "reports"
 
 
 @lru_cache

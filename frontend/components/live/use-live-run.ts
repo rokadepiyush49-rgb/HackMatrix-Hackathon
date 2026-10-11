@@ -151,6 +151,12 @@ export function useLiveRun(handlers: LiveHandlers = {}) {
     attach(r.run_id);
   }, [attach]);
 
+  /** Tonight's rows in another arrival order (late connector, duplicates, shuffled…), detecting at checkpoints. */
+  const startReplay = useCallback(async (plan: string) => {
+    const r = await api<{ run_id: string }>("/live/replay", { method: "POST", body: JSON.stringify({ plan }) });
+    attach(r.run_id);
+  }, [attach]);
+
   const compose = useCallback(async (spec: ComposeSpec, speed: number) => {
     const r = await api<{ run_id: string }>("/live/compose", { method: "POST", body: JSON.stringify({ ...spec, speed }) });
     attach(r.run_id);
@@ -170,5 +176,5 @@ export function useLiveRun(handlers: LiveHandlers = {}) {
     if (state.runId) await api(`/live/runs/${state.runId}/cancel`, { method: "POST", body: "{}" }).catch((e: ApiError) => e);
   }, [state.runId]);
 
-  return { state, attach, start, compose, detectBank, reset, cancel };
+  return { state, attach, start, startReplay, compose, detectBank, reset, cancel };
 }

@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { AlertPicker } from "@/components/chain/alert-bits";
 import { AgentAvatar, Chamber, ClaimRow, Entry, STATUS_TONE, TallyBar, stanceOf } from "@/components/council/council";
+import { EngineBar, TraceTab } from "@/components/council/engine";
 import { Button, Chip, ErrorBox, PageHeader, Panel, PanelHead, Skeleton, Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/primitives";
 import { useAlert, useCouncil } from "@/lib/api";
 import { cn } from "@/lib/format";
@@ -101,7 +102,7 @@ export default function CouncilRoom() {
       <PageHeader
         eyebrow={`Council · Investigation Council · ${id}`}
         title="Evidence War Room"
-        sub="Eight agents argue the same case from the same evidence. They can ask for records; the moderator retrieves them or says they are not ingested. No agent scores or closes the case — the council hands a structured finding to a human."
+        sub="Eight specialist agents argue the same case from the same evidence: Groq-hosted LLM agents inside SUTRA's harness, or a deterministic script when no model is configured. They can ask for records; the moderator retrieves them or says they are not ingested. No agent scores or closes the case — the council hands a structured finding to a human."
         right={<>
           <AlertPicker value={id} onChange={(v) => router.push(`/council/${v}`)} />
           <Button variant="primary" onClick={() => router.push(`/cases/${id}`)}>Open case <ArrowRight size={14} /></Button>
@@ -112,6 +113,7 @@ export default function CouncilRoom() {
 
       {c && (
         <>
+          <EngineBar id={id} c={c} />
           {/* Stats + playback controls */}
           <div className="mb-4 flex flex-wrap items-center gap-2">
             {[["agents", c.stats.agents], ["evidence items", c.stats.evidence], ["rounds", c.stats.rounds], ["record requests", c.stats.requests], ["exchanges", c.stats.entries]].map(([k, v]) => (
@@ -269,6 +271,7 @@ export default function CouncilRoom() {
                   <TabsTrigger value="claims">Claims ledger</TabsTrigger>
                   <TabsTrigger value="requests">Record requests</TabsTrigger>
                   <TabsTrigger value="roles">Agent roles</TabsTrigger>
+                  <TabsTrigger value="trace">Harness trace</TabsTrigger>
                 </TabsList></div>
                 <TabsContent value="claims" className="px-4 pb-4 pt-3">
                   <TallyBar tally={c.tally} />
@@ -307,6 +310,9 @@ export default function CouncilRoom() {
                       );
                     })}
                   </div>
+                </TabsContent>
+                <TabsContent value="trace" className="px-4 pb-4 pt-3">
+                  <TraceTab runId={c.run?.run_id} />
                 </TabsContent>
                 <TabsContent value="roles" className="px-4 pb-4 pt-3">
                   <div className="grid gap-2.5 sm:grid-cols-2">

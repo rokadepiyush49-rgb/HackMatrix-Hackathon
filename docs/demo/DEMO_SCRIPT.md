@@ -99,3 +99,55 @@ Open two windows side by side: **http://localhost:3000/bank** (the bank) and **S
 
 The bank refuses what a bank would: a transfer above the transaction limit or the balance, money to someone who is not
 a payee, an override nobody granted, a biometric change with no eKYC.
+
+## Fraud Simulator: commit a fraud, follow it to a closed case (about 7 minutes)
+
+**Simulate → Fraud Simulator** (`/simulate`) does the Kestrel Bank walkthrough above as a guided story, with no second
+window. Each button is a real call to the bank, which records the rows its systems would; SUTRA's own detection run then
+raises the signals and alerts, and the simulator opens a case on every queued alert through the case API, as the duty
+analyst would. Progress survives leaving the page, so you can go to the case file and come back.
+
+| Step | Screen | Do | Say |
+|---|---|---|---|
+| 1 | Fraud Simulator | Choose **Insider account takeover** | "Four playbooks: three frauds and one legitimate twin. Let's be the insider." |
+| 2 | Brief & tune | Let a judge change the target account, the time, the amounts or the mules → **Begin** | "Nothing here decides the outcome. These only shape the rows the bank will record." |
+| 3 | Commit it in the bank | Click the first two actions by hand, then **Play the rest** | Point at each action's records and at the target account card: the mobile swaps, the limit jumps to ₹5 L, ₹8 L leaves. "Seven bank systems, fifteen records. SUTRA sees these rows, not our intent." |
+| 4 | SUTRA investigates | **Run SUTRA detection** (about a minute) | "Same pipeline as the 15-minute job." Tested result: **P1 insider-enabled takeover**, ₹8.00 L at risk, money out 15 minutes after the login, 13 signals from 8 detectors, all 4 staff accesses unexplained, **case opened automatically**. |
+| 5 | Journey, right-hand panel | Signal Desk → Case file → Timeline Replay → Alibi Ledger → Money Trail | "The alert is queued and argued both ways; here is the chain minute by minute; here is why every access lacks a reason; here is where the money went." |
+| 6 | Journey | Investigation Council → Prosecution & defence → Control Lab | "The agents debate; the defence is tested; expiring the override on time would have broken the chain six days before the money moved." |
+| 7 | Case file | **Propose decision** (Escalate / STR), sign in as Suresh, **approve** | "Four-eyes: the investigator proposes, vigilance decides. That is the conclusion of the case." |
+| 8 | Fraud Simulator | **Simulate another fraud** → **Legitimate twin: pension camp** → Play → detect | "Same mobile change on a dormant account, done properly. No alert: Alibi finds the ticket, the roster and the customer at the desk." |
+| 9 | Fraud Simulator | **Reset simulation** | Undoes everything the bank recorded, removes the alerts and cases it created, restores the accounts and re-detects. |
+
+The other two playbooks, as tested:
+
+| Playbook | What happens in the bank | SUTRA's result |
+|---|---|---|
+| Account takeover by an outsider | New phone from Kolkata at 23:02, password reset, two payees at other banks, ₹98,500 + ₹97,000 | **P1 account takeover**, ₹1.96 L, money out 5 minutes after the sign-in, case opened; no employee in the chain |
+| Money-mule pass-through | Three ₹40,000 credits from other banks, ₹1,14,000 forwarded to a new payee within 7 minutes | **G2 rapid pass-through signal only, no case.** "A signal is not an alert until it joins a chain to money leaving." |
+
+Each verdict is checked against what the playbook expects and labelled *As expected*. If the bank refuses an action
+(for example a payee that already exists because the same fraud ran before), the step shows the bank's own words: press
+**Reset simulation** and start again.
+
+## FIN-04 final-round segment (about 6 minutes)
+
+What the brief asks to see: a legitimate look-alike, coordinated suspicious activity, late linking
+evidence and duplicate delivery, with case history and priority changes. Each replay runs detection twice
+(about 25 s per run on an M-series laptop; about 80 s on a Windows laptop with Postgres in Docker). On a
+slow machine, run the late-link replay just before the judges arrive and show its case history live.
+
+| Step | Screen | Do | Say |
+|---|---|---|---|
+| 1 | **Live Ops** | Arrival order → **IMPS connector lags (late linking evidence)** → **Play in this arrival order** | "Same evening, but the IMPS switch's connector is 35 minutes late. Every row is logged with when it happened and when it reached us." |
+| 2 | Live Ops — first detection | Point at the empty output after the first checkpoint | "The insider's override, login and mobile change are in. No money has arrived, so there is no chain yet. Absence of evidence is not a finding." |
+| 3 | Live Ops — second detection | The 18 IMPS rows land tagged **late · n min behind**; the P1 appears | "The late transfers link the access to the money, and to the same mule ring as last night." |
+| 4 | **Case → Case history** on the new P1 and on AL-0922-001 | Expand the newest revisions | "Every revision is kept; the database refuses edits. Here is why it changed: these rows arrived late, the chain gained E5, priority set by this rule. The M7 score is a reason to look first, not a finding." |
+| 5 | Live Ops | **Reset demo**, then arrival order **Duplicate delivery + a tampered re-send** → Play | "At-least-once delivery: every transfer arrives twice and one comes back with a changed amount." Point at **duplicate · absorbed** and **refused**. |
+| 6 | Terminal or `ml/reports/replay/replay_report.json` | Show `invariant: true` | "We replayed the same evening in order, late, duplicated, shuffled and reversed. All five converge to the same 85 cases, money totals, balances and M7 scores." |
+| 7 | Live Ops — Alibi panel | The pension camp | "The legitimate look-alike: same mobile changes, but ticket, eKYC and roster explain them. No alert, whatever the order." |
+| 8 | **Council** | **Convene AI agents** (needs `GROQ_API_KEY`), then **Harness trace** | "Agents on Groq argue the case, and the harness decides what counts: claims citing records the agent wasn't given, figures not in the cited record, or 'X committed fraud' are dropped and listed here." Without a key, say "Re-run council" uses the deterministic council, and show the trace from a run saved earlier. |
+| 9 | **Case → Account Aggregator** on AL-0918-001 | Request consent → Approve as the customer (demo) → Fetch → open the Council | "A customer-consented statement from another bank, through the RBI Account Aggregator flow. This FIP is a labelled synthetic one; live data needs a licensed FIU. The source-of-funds question the Council couldn't answer is now answered, and cited." |
+
+Before this segment: `make migrate` on an existing database, and `make train` once if `/health/ready`
+reports a model as anything other than ok or unregistered.

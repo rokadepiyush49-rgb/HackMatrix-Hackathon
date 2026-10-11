@@ -3,7 +3,7 @@
 import * as Dropdown from "@radix-ui/react-dropdown-menu";
 import { ChevronDown, LogOut, Moon, Search, Sparkles, Sun, UserRound } from "lucide-react";
 import { useTheme } from "next-themes";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 
 import { Avatar } from "@/components/ui/doodles";
@@ -18,7 +18,6 @@ import { useUI } from "./ui-context";
 
 export function Topbar() {
   const path = usePathname();
-  const router = useRouter();
   const { setPalette, openAsk, focusAlert } = useUI();
   const { data: me } = useMe();
   const { data: alerts } = useAlerts("", { staleTime: 60_000 });
@@ -41,9 +40,12 @@ export function Topbar() {
     return () => window.removeEventListener("keydown", onKey);
   }, [setPalette]);
 
+  // A full navigation, not router.push: it drops every cached query, so the next person to sign in
+  // never sees the previous persona's data. Switching persona signs out first for the same reason.
   const signOut = async () => {
-    await fetch("/api/session", { method: "DELETE" });
-    router.push("/login");
+    await fetch("/api/session", { method: "DELETE" }).catch(() => null);
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.assign("/login");
   };
 
   return (
@@ -73,7 +75,7 @@ export function Topbar() {
               <div className="mt-1 text-[10.5px] font-medium tracking-[0.06em] text-faint">{me?.role}</div>
             </div>
             <Dropdown.Separator className="mx-2 my-1 h-px bg-line" />
-            <Dropdown.Item onSelect={() => router.push("/login")} className={cn("flex cursor-pointer items-center gap-2 rounded-full px-3 py-2 text-[12.5px] text-ink-2 outline-none data-[highlighted]:bg-panel-2")}>
+            <Dropdown.Item onSelect={signOut} className={cn("flex cursor-pointer items-center gap-2 rounded-full px-3 py-2 text-[12.5px] text-ink-2 outline-none data-[highlighted]:bg-panel-2")}>
               <UserRound size={14} /> Switch persona
             </Dropdown.Item>
             <Dropdown.Item onSelect={signOut} className="flex cursor-pointer items-center gap-2 rounded-full px-3 py-2 text-[12.5px] text-ink-2 outline-none data-[highlighted]:bg-panel-2">
@@ -98,6 +100,14 @@ export function Topbar() {
         aria-label="Toggle theme"
       >
         {mounted && resolvedTheme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+      </button>
+      <button
+        onClick={signOut}
+        className="grid size-10 shrink-0 place-items-center rounded-full bg-panel text-ink-2 shadow-sm transition-shadow hover:shadow-md"
+        aria-label="Sign out"
+        title={me ? `Sign out ${me.display_name}` : "Sign out"}
+      >
+        <LogOut size={16} />
       </button>
       <button
         onClick={() => askTarget && openAsk(askTarget)}

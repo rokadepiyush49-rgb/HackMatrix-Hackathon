@@ -25,6 +25,15 @@ const SPEEDS = [
   { v: 0, label: "Instant" },
 ];
 
+// Arrival orders for tonight's rows (FIN-04): whatever the order, the final cases must come out the same.
+const ARRIVAL_PLANS = [
+  { v: "in-order", label: "Arrive in order" },
+  { v: "late-link", label: "IMPS connector lags (late linking evidence)" },
+  { v: "duplicates", label: "Duplicate delivery + a tampered re-send" },
+  { v: "shuffled", label: "Shuffled arrival" },
+  { v: "reverse", label: "Newest first" },
+];
+
 // Source systems by what they tell an investigator: staff actions, master data, customer channels,
 // money movement, and the paperwork that explains staff actions.
 const SYSTEM_TONE: Record<string, Tone> = {
@@ -76,6 +85,7 @@ export default function LiveOps() {
   const { data: me } = useMe();
   const status = useGet<LiveStatus>(["live-status"], "/live/status", { refetchInterval: (q) => (q.state.data?.busy ? 2000 : false) });
   const [speed, setSpeed] = useState(240);
+  const [plan, setPlan] = useState<string>("in-order");
   const [voiceOn, setVoiceOn] = useVoiceSetting();
   const voices = useVoices();
   const canSpeak = useVoiceSupported();
@@ -88,7 +98,7 @@ export default function LiveOps() {
     if (voiceOn) speak(text, PERSONAS.announcer, voices);
   };
   const hash = useSyncExternalStore(hashStore.subscribe, hashStore.get, () => "");
-  const { state, attach, start, compose, detectBank, reset, cancel } = useLiveRun({
+  const { state, attach, start, startReplay, compose, detectBank, reset, cancel } = useLiveRun({
     onAlert: (a) => {
       if (a.new && ["P1", "P2"].includes(a.priority)) {
         const login = a.links.find((l) => l.code === "E1");
@@ -158,10 +168,10 @@ export default function LiveOps() {
     ) : (
       <>
         <Button variant="ghost" disabled={busy} onClick={() => setConfirmReset(true)}><RotateCcw size={14} /> Reset</Button>
-        <Button variant="primary" disabled={busy || !st?.pending} onClick={() => go(() => start(speed))}><Play size={14} /> Play tonight&apos;s feed</Button>
+        <Button variant="primary" disabled={busy || !st?.pending} onClick={() => go(() => (plan === "in-order" ? start(speed) : startReplay(plan)))}><Play size={14} /> {plan === "in-order" ? <>Play tonight&apos;s feed</> : "Play in this arrival order"}</Button>
       </>
     )) : (
-      <Button variant="primary" disabled={busy || !st?.pending} onClick={() => go(() => start(speed))}><Play size={14} /> Play tonight&apos;s feed</Button>
+      <Button variant="primary" disabled={busy || !st?.pending} onClick={() => go(() => (plan === "in-order" ? start(speed) : startReplay(plan)))}><Play size={14} /> {plan === "in-order" ? <>Play tonight&apos;s feed</> : "Play in this arrival order"}</Button>
     );
   } else if (mode === "bank") {
     action = (
@@ -210,6 +220,13 @@ export default function LiveOps() {
               title="Read new alerts and verdicts aloud (your browser's speech, offline)">
               {voiceOn ? <Volume2 size={14} /> : <VolumeX size={14} />} Voice {voiceOn ? "on" : "off"}
             </Button>
+          )}
+          {mode === "evening" && (
+            <select id="arrival-plan" value={plan} disabled={busy} onChange={(e) => setPlan(e.target.value)} aria-label="Arrival order"
+              title="Deliver tonight's rows late, twice or out of order — the final cases must come out the same"
+              className="h-8 rounded-full border border-line bg-panel px-3 text-[12px] font-medium text-ink outline-none focus:border-info disabled:opacity-50">
+              {ARRIVAL_PLANS.map((p) => <option key={p.v} value={p.v}>{p.label}</option>)}
+            </select>
           )}
           <div className="flex items-center rounded-full border border-line bg-panel p-0.5" role="radiogroup" aria-label="Replay speed">
             {SPEEDS.map((s) => (
@@ -283,7 +300,7 @@ function ModeTabs({ mode, st, onChange }: { mode: Mode; st: LiveStatus; onChange
 
 function MissionBar({ st, run, mode, reduce }: { st: LiveStatus; run: RunState; mode: Mode; reduce: boolean }) {
   const bankRows = st.bank?.ingested ?? 0;
-  const ingested = mode === "bank" ? bankRows : run.kind === "feed" ? run.events.length : mode === "evening" ? st.ingested : 0;
+  const ingested = mode === "bank" ? bankRows : run.kind === "feed" ? run.events.filter((e) => !e.receipt || e.receipt.outcome === "NEW").length : mode === "evening" ? st.ingested : 0;
   const total = mode === "bank" ? bankRows : run.total || (mode === "evening" ? st.total : 0);
   const clock = run.clock ?? (mode === "evening" ? (st.pending ? st.feed_start : st.feed_end) : null);
   const stages = run.stages.length ? run.stages : st.stages;
@@ -374,6 +391,9 @@ function RowItem({ r, cite, strand, enter, dim }: {
           <Chip tone={systemTone(r.system)} className="!px-2 !py-0 !text-[10.5px]">{r.system}</Chip>
           {cite && <span className="num rounded bg-threat px-1.5 text-[10.5px] font-semibold text-on-primary" title={`Cited by ${cite.alert}`}>{cite.code}</span>}
           {strand && <Chip tone={STRAND[strand].tone} className="!px-2 !py-0 !text-[10.5px]">{STRAND[strand].label}</Chip>}
+          {r.receipt?.outcome === "DUPLICATE" && <Chip tone="faint" className="!px-2 !py-0 !text-[10.5px]">duplicate · absorbed</Chip>}
+          {r.receipt?.outcome === "CONFLICT" && <Chip tone="threat" className="!px-2 !py-0 !text-[10.5px]">refused · {r.receipt.reason ?? "conflict"}</Chip>}
+          {r.receipt?.late && <Chip tone="amber" className="!px-2 !py-0 !text-[10.5px]">late · {Math.round((r.receipt.late_by_s ?? 0) / 60)} min behind</Chip>}
           <span className="num text-[10.5px] text-faint">{r.ref}</span>
         </div>
         <p className="mt-0.5 text-[12px] leading-snug text-ink-2">{r.summary}</p>
