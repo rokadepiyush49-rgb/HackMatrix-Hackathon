@@ -289,6 +289,14 @@ Press **Play** and three things happen:
 
 **Kestrel Bank** (`/bank`) is a working test bank to try SUTRA by hand: a staff core-banking console (sign in from the branch or over VPN, search customers, change mobile numbers and limits, raise tickets, capture eKYC) and customer NetBanking (sign in on a usual or a new phone, reset the password, add payees, send money). It enforces what a bank would — permissions, balances, transaction limits, payees — and records every action into Loom as it happens. In Live Ops → **Kestrel Bank**, press **Run detection now** and see what SUTRA makes of it. It also has a small REST API, ten one-click test scenarios and `make bank-check`, which runs them all through SUTRA and checks the outcomes ([`docs/mock-bank`](docs/mock-bank/README.md)).
 
+**Fraud Simulator** (`/simulate`) turns Kestrel Bank into a guided story for an audience. Pick a fraud (an insider
+takeover, an outsider takeover, a money-mule pass-through) or its legitimate twin (a pension camp), tune it, and commit
+it one action at a time while the target account's balance, mobile and limit change live and every record the bank
+writes is shown. Then **Run SUTRA detection**: the same pipeline raises the signals and the alert, a case is opened on
+every queued alert, and a ten-stop journey leads from the Signal Desk through the case file, Alibi, the Money Trail, the
+Council and Control Lab to a four-eyes decision. Detection and case logic are untouched: the simulator only drives the
+bank's API, the Live Ops detection run and the case API. Walkthrough in [`docs/demo/DEMO_SCRIPT.md`](docs/demo/DEMO_SCRIPT.md).
+
 Alert IDs, human triage and open cases survive every re-run ([ADR 016](docs/adr/016-live-feed-demo.md)).
 **Reset demo** undoes the evening exactly.
 

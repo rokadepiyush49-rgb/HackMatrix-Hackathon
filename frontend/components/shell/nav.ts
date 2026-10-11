@@ -22,6 +22,7 @@ import {
   ShieldCheck,
   Siren,
   UserCog,
+  VenetianMask,
   Waypoints,
   type LucideIcon,
 } from "lucide-react";
@@ -43,6 +44,7 @@ export const NAV: NavSection[] = [
     items: [
       { href: "/", label: "Command Center", icon: Radar },
       { href: "/live", label: "Live Ops", icon: Radio },
+      { href: "/simulate", label: "Fraud Simulator", icon: VenetianMask },
     ],
   },
   {
