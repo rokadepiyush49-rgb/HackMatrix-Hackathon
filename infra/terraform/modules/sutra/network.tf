@@ -57,7 +57,7 @@ module "endpoints" {
   endpoints = merge(
     { s3 = { service = "s3", service_type = "Gateway", route_table_ids = module.vpc.private_route_table_ids } },
     { for svc in ["ecr.api", "ecr.dkr", "sts", "secretsmanager", "kms", "logs", "eks-auth"] :
-      replace(svc, ".", "_") => { service = svc, private_dns_enabled = true, subnet_ids = module.vpc.private_subnets } }
+    replace(svc, ".", "_") => { service = svc, private_dns_enabled = true, subnet_ids = module.vpc.private_subnets } }
   )
   tags = local.tags
 }

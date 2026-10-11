@@ -32,8 +32,8 @@ module "eks" {
       # Native NetworkPolicy enforcement in the VPC CNI (eBPF) — no Calico needed.
       configuration_values = jsonencode({ enableNetworkPolicy = "true" })
     }
-    aws-ebs-csi-driver                = {}
-    amazon-cloudwatch-observability   = {} # Container Insights, logs to CloudWatch
+    aws-ebs-csi-driver              = {}
+    amazon-cloudwatch-observability = {} # Container Insights, logs to CloudWatch
   }
 
   # A small fixed pool for cluster add-ons; Karpenter provisions application capacity on demand.
