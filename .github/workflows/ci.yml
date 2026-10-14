@@ -92,7 +92,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         with: { terraform_version: 1.10.5 }
       - run: terraform fmt -check -recursive infra/terraform
       - name: Validate each root (no backend, no credentials)
