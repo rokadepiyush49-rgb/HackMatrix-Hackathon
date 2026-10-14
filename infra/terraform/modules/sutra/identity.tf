@@ -107,7 +107,7 @@ data "aws_iam_policy_document" "app" {
 
 module "pod_identity_app" {
   source  = "terraform-aws-modules/eks-pod-identity/aws"
-  version = "~> 1.7"
+  version = "~> 2.9"
 
   name                    = "${local.name}-app"
   attach_custom_policy    = true
@@ -122,7 +122,7 @@ module "pod_identity_app" {
 
 module "pod_identity_lb_controller" {
   source  = "terraform-aws-modules/eks-pod-identity/aws"
-  version = "~> 1.7"
+  version = "~> 2.9"
 
   name                            = "${local.name}-aws-lbc"
   attach_aws_lb_controller_policy = true
@@ -134,7 +134,7 @@ module "pod_identity_lb_controller" {
 
 module "pod_identity_external_secrets" {
   source  = "terraform-aws-modules/eks-pod-identity/aws"
-  version = "~> 1.7"
+  version = "~> 2.9"
 
   name                                  = "${local.name}-external-secrets"
   attach_external_secrets_policy        = true
