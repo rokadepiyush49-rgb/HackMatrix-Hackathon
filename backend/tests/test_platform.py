@@ -10,8 +10,16 @@ from app.core.storage import LocalStorage
 STRONG = "x" * 48
 
 
+@pytest.fixture(autouse=True)
+def _no_sutra_env(monkeypatch):
+    """CI exports strong secrets; the configuration-guard tests must see only their own arguments."""
+    for name in ("SUTRA_ENV", "SUTRA_JWT_SECRET", "SUTRA_PII_HMAC_KEY", "SUTRA_DEMO_MODE",
+                 "SUTRA_STORAGE_BACKEND", "SUTRA_S3_BUCKET", "SUTRA_EVIDENCE_LOCK_MODE"):
+        monkeypatch.delenv(name, raising=False)
+
+
 def cfg(**kw) -> Settings:
-    """Settings from arguments only — never the developer's .env."""
+    """Settings from arguments only — never the developer's .env or the process environment."""
     return Settings(_env_file=None, **kw)
 
 

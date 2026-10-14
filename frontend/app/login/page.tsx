@@ -83,9 +83,14 @@ function Thesis() {
   );
 }
 
+/** Only same-site paths: "/cases/1" yes; "https://…", "//host" and "/\host" (browsers read both as a host) no. */
+function safeNext(raw: string | null): string {
+  return raw && raw.startsWith("/") && !raw.startsWith("//") && !raw.startsWith("/\\") ? raw : "/";
+}
+
 function LoginInner() {
   const router = useRouter();
-  const next = useSearchParams().get("next") ?? "/";
+  const next = safeNext(useSearchParams().get("next"));
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

@@ -54,10 +54,10 @@ data "aws_iam_policy_document" "github_assume" {
 }
 
 resource "aws_iam_role" "github_release" {
-  name               = "${local.name}-github-release"
-  assume_role_policy = data.aws_iam_policy_document.github_assume.json
+  name                 = "${local.name}-github-release"
+  assume_role_policy   = data.aws_iam_policy_document.github_assume.json
   max_session_duration = 3600
-  tags               = local.tags
+  tags                 = local.tags
 }
 
 data "aws_iam_policy_document" "github_release" {
@@ -67,7 +67,7 @@ data "aws_iam_policy_document" "github_release" {
   }
   statement {
     actions = ["ecr:BatchCheckLayerAvailability", "ecr:BatchGetImage", "ecr:CompleteLayerUpload",
-      "ecr:InitiateLayerUpload", "ecr:PutImage", "ecr:UploadLayerPart", "ecr:DescribeImages"]
+    "ecr:InitiateLayerUpload", "ecr:PutImage", "ecr:UploadLayerPart", "ecr:DescribeImages"]
     resources = [for r in aws_ecr_repository.app : r.arn]
   }
   statement {

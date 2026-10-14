@@ -50,6 +50,58 @@ def test_security_headers(client):
     assert r.headers["x-frame-options"] == "DENY"
 
 
+def _session(db, user_id: str) -> dict:
+    from app.core.security import issue_tokens
+    from app.loom.models import AppUser
+
+    return issue_tokens(db.get(AppUser, user_id))
+
+
+def test_sign_out_ends_every_token_of_the_session(client, db):
+    t = _session(db, "ananya")
+    bearer = {"Authorization": f"Bearer {t['access_token']}"}
+    refreshed = client.post(f"{API}/auth/refresh", json={"refresh_token": t["refresh_token"]})
+    assert refreshed.status_code == 200
+    assert client.get(f"{API}/auth/me", headers=bearer).status_code == 200
+
+    other = _session(db, "ananya")  # another sign-in by the same person, e.g. a second laptop
+    assert client.post(f"{API}/auth/logout", json={"refresh_token": t["refresh_token"]}).json() == {"ok": True}
+
+    assert client.get(f"{API}/auth/me", headers=bearer).status_code == 401, "access token of a signed-out session"
+    assert client.post(f"{API}/auth/refresh", json={"refresh_token": t["refresh_token"]}).status_code == 401
+    newer = refreshed.json()["refresh_token"]
+    assert client.post(f"{API}/auth/refresh", json={"refresh_token": newer}).status_code == 401, \
+        "refreshed copies belong to the same session"
+    assert client.get(f"{API}/auth/me", headers={"Authorization": f"Bearer {other['access_token']}"}).status_code == 200
+
+
+def test_tokens_without_a_session_are_refused(client):
+    from app.core.security import _encode
+
+    legacy = _encode("ananya", "access", 15, {"role": "L2_INVESTIGATOR"})
+    assert client.get(f"{API}/auth/me", headers={"Authorization": f"Bearer {legacy}"}).status_code == 401
+
+
+@pytest.mark.parametrize("user, allowed", [("audit", True), ("admin", True), ("ananya", False), ("rohit", False)])
+def test_only_auditors_and_admins_read_the_audit_trail(client, as_user, user, allowed):
+    r = client.get(f"{API}/governance/audit?limit=1", headers=as_user(user))
+    assert r.status_code == (200 if allowed else 403)
+
+
+@pytest.mark.parametrize("user", ["rohit", "audit", "meera"])
+def test_copilot_needs_the_copilot_capability(client, as_user, user):
+    r = client.post(f"{API}/copilot/ask", json={"alert_id": "AL-0000-000", "question": "Why?"}, headers=as_user(user))
+    assert r.status_code == 403
+    assert client.post(f"{API}/copilot/str", json={"alert_id": "AL-0000-000"}, headers=as_user(user)).status_code == 403
+
+
+@pytest.mark.parametrize("path", ["/live/runs", "/live/replay", "/live/detect", "/live/reset",
+                                  "/live/runs/LIVE-0/cancel", "/lab/flip"])
+def test_read_only_roles_cannot_change_live_data(client, as_user, path):
+    for user in ("rohit", "audit"):
+        assert client.post(f"{API}{path}", json={}, headers=as_user(user)).status_code == 403
+
+
 # ── alerts are argued, graded and hashed ───────────────────────────────────
 
 

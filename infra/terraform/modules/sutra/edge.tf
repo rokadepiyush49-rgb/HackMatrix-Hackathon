@@ -87,6 +87,7 @@ resource "aws_wafv2_web_acl" "app" {
 resource "aws_cloudwatch_log_group" "waf" {
   name              = "aws-waf-logs-${local.name}" # the prefix is required by WAF
   retention_in_days = 365
+  kms_key_id        = aws_kms_key.logs.arn
   tags              = local.tags
 }
 

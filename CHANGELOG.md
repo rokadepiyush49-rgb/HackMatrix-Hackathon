@@ -53,4 +53,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 - Alert summaries no longer read "used an expired override to changed".
 
 ### Security
+- Signing out ends the session: its access and refresh tokens (every refreshed copy too) are refused
+  (`revoked_session`, migration `e6b3a9c1d702`). `/auth/refresh` is rate limited.
+- The audit trail needs `audit:read` (auditors, admins), Ask SUTRA `copilot:use`, STR drafts `str:draft`,
+  approving a reviewed decision `cases:decide`; Live Ops and Lab changes need `cases:investigate`.
+- Sign-in rate limits key on each browser's address (the BFF forwards the one the load balancer saw),
+  not on the web server's; unknown usernames cost the same as wrong passwords.
+- Sign-in only redirects to same-site paths (`?next=`); the BFF refuses `.`/`..` path segments.
 - Compiled bytecode, generated evidence packs and model binaries are no longer tracked in Git.

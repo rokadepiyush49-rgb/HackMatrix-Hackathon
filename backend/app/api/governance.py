@@ -84,7 +84,7 @@ def sources(p: CurrentUser, db: Annotated[Session, Depends(get_db)]) -> list[dic
 
 
 @router.get("/audit")
-def audit_log(p: Annotated[Principal, Depends(require("alerts:read"))], db: Annotated[Session, Depends(get_db)],
+def audit_log(p: Annotated[Principal, Depends(require("audit:read"))], db: Annotated[Session, Depends(get_db)],
               limit: int = 100, target: str | None = None) -> dict:
     stmt = select(AuditLog).order_by(AuditLog.id.desc()).limit(min(limit, 500))
     if target:

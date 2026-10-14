@@ -1,0 +1,6 @@
+# Checkov policy for infra/terraform (CI: .github/workflows/ci.yml). Resource-specific exceptions are
+# inline `#checkov:skip` comments next to the resource, each with its reason.
+skip-check:
+  # Registry modules are pinned by version constraint and bumped by Dependabot; commit-hash pinning
+  # applies to git sources.
+  - CKV_TF_1

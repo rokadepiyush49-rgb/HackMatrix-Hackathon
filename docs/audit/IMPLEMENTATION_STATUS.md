@@ -48,9 +48,9 @@ migration behind and no models had been trained.
 | Setu AA sandbox run | BLOCKED | Bridge credentials; confirm header names and the ReBIT purpose code |
 | Live AA customer data | BLOCKED | Regulated, Sahamati-certified FIU |
 | Council checkpoint/resume after an API restart | PENDING | Interrupted runs are marked FAILED and must be convened again |
-| Refresh-token revocation on sign-out | PENDING | `jti` denylist in Postgres or Valkey |
+| Refresh-token revocation on sign-out | DONE | Sign-out revokes the session's `sid`; access and refresh tokens are refused (`test_sign_out_ends_every_token_of_the_session`) |
 | Drift monitoring for M5/M6/M7 | PENDING | Store per-feature training distributions in the registry; compare per run; propose (never auto-deploy) |
-| Capability check on Live Ops routes | PENDING | Low risk: demo mode only |
+| Capability check on Live Ops routes | DONE | Changes need `cases:investigate` (`test_read_only_roles_cannot_change_live_data`) |
 | Frontend tests for the new panels | PENDING | No frontend test runner in the repo; verified by hand in the browser |
 
 ## D. Next, in order
@@ -59,7 +59,7 @@ migration behind and no models had been trained.
    tune prompts only if the harness drops too much. Pre-run the council before the judging session.
 2. **Setu sandbox** (1 day; needs Bridge credentials). Point `SUTRA_AA_PROVIDER=setu`, run the consent
    flow, fix any schema drift in `normalize.py`.
-3. **Refresh-token revocation** (½ day).
+3. ~~**Refresh-token revocation**~~ — done: sign-out ends the session.
 4. **Drift report** per detection run (1 day): PSI per M6/M7 feature against stored training quantiles;
    propose evaluation only.
 5. **Council resume from checkpoints** (1–2 days): persist validated claims per round in `council_run`.
@@ -102,7 +102,7 @@ database (migrated, seeded with world 42, models trained).
   - Rate limits can make a live council slow.
 - Small positive classes (33 held-out suspicious cases; 60 insider sessions): wide uncertainty.
 - Detection is a full recompute (≈80 s per run here). Fine for 15-minute batches; not streaming.
-- Stateless JWTs: a stolen refresh token stays valid until expiry.
+- JWTs are revocable per sign-in session: a stolen token still works until that session signs out or the token expires.
 - The AA Setu adapter is written from documentation, not exercised.
 
 ## H. Decisions

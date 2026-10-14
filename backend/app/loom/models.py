@@ -429,6 +429,18 @@ class AppUser(Base):
     branch_scope: Mapped[list] = mapped_column(ARRAY(String), default=list)
 
 
+class RevokedSession(Base):
+    """A signed-out sign-in session. Every token carrying its `sid` is refused from then on.
+
+    Rows are only needed until the session's last token could have expired (`expires_at`)."""
+
+    __tablename__ = "revoked_session"
+    sid: Mapped[str] = mapped_column(String(32), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(32))
+    revoked_at: Mapped[datetime] = mapped_column(TS)
+    expires_at: Mapped[datetime] = mapped_column(TS, index=True)
+
+
 class UnmaskRequest(Base):
     __tablename__ = "unmask_request"
     id: Mapped[str] = mapped_column(String(24), primary_key=True)

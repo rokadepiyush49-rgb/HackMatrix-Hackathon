@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 
-import { ACCESS, API, clearTokens, storeTokens, type Tokens } from "@/lib/server/session";
+import { ACCESS, API, REFRESH, clearTokens, clientHeaders, storeTokens, type Tokens } from "@/lib/server/session";
 
 // POST /api/session  { username, password } — or { username, demo: true } in local demo mode,
 // where the seeded demo password is read from the server environment (never sent to the browser).
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   }
   const res = await fetch(`${API}/api/v1/auth/login`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(await clientHeaders()) },
     body: JSON.stringify({ username: body.username, password }),
     cache: "no-store",
   }).catch(() => null);
@@ -23,13 +23,18 @@ export async function POST(request: Request) {
   return Response.json({ ok: true });
 }
 
-// DELETE /api/session — sign out: record it in the API's audit chain (best effort), then drop both cookies.
+// DELETE /api/session — sign out: the API ends the session, so its tokens stop working everywhere, and
+// records it in the audit chain (best effort); then drop both cookies. The refresh token is sent too, so
+// this works after the access token has lapsed.
 export async function DELETE() {
-  const token = (await cookies()).get(ACCESS)?.value;
-  if (token) {
+  const jar = await cookies();
+  const token = jar.get(ACCESS)?.value;
+  const refreshToken = jar.get(REFRESH)?.value;
+  if (token || refreshToken) {
     await fetch(`${API}/api/v1/auth/logout`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ refresh_token: refreshToken ?? null }),
       cache: "no-store",
     }).catch(() => null); // an unreachable API must not keep someone signed in
   }

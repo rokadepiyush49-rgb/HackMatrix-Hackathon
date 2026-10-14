@@ -30,6 +30,9 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 # ── models ──────────────────────────────────────────────────────────────────
 FROM deps AS models
+# DL3008: Debian security updates replace exact package versions, so a pin would break rebuilds; the base
+# image is tracked by Dependabot and every image is scanned by Trivy instead.
+# hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 && rm -rf /var/lib/apt/lists/*
 COPY backend backend
 COPY data/kestrel_sim data/kestrel_sim
@@ -50,7 +53,8 @@ LABEL org.opencontainers.image.title="sutra-api" \
       org.opencontainers.image.revision="${REVISION}" \
       org.opencontainers.image.licenses="Apache-2.0"
 
-# libgomp1: OpenMP runtime LightGBM links against. Nothing else is installed.
+# libgomp1: OpenMP runtime LightGBM links against. Nothing else is installed. (DL3008: see the models stage.)
+# hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --system --gid 10001 sutra \
@@ -76,7 +80,8 @@ WORKDIR /app/backend
 EXPOSE 8000
 
 # One process per container: Kubernetes scales replicas, so no gunicorn worker pool inside.
-# --proxy-headers: trust X-Forwarded-For from the ALB so rate limits key on the real client.
+# --proxy-headers: rate limits key on the client address in X-Forwarded-For. Only the web pods can reach
+# the API (NetworkPolicy), and the web BFF sends exactly one address: the one the ALB saw.
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", \
      "--proxy-headers", "--forwarded-allow-ips", "*", \
      "--no-server-header", "--no-access-log", "--timeout-graceful-shutdown", "25"]

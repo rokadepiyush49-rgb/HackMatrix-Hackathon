@@ -2,6 +2,7 @@
 # Postgres is SUTRA's only system of record: bitemporal events, the evidence book, the audit hash
 # chain and case state all need ACID transactions together (see docs/adr/002).
 resource "aws_security_group" "db" {
+  #checkov:skip=CKV2_AWS_5:Attached to the RDS instance through module.db (vpc_security_group_ids)
   name_prefix = "${local.name}-db-"
   description = "PostgreSQL from EKS nodes/pods only"
   vpc_id      = module.vpc.vpc_id
@@ -36,20 +37,20 @@ module "db" {
   username = "sutra_admin"
   port     = 5432
   # Master password generated and rotated by RDS in Secrets Manager — never in Terraform state.
-  manage_master_user_password = true
+  manage_master_user_password         = true
   iam_database_authentication_enabled = true
 
   multi_az               = var.db_multi_az
   db_subnet_group_name   = module.vpc.database_subnet_group_name
   vpc_security_group_ids = [aws_security_group.db.id]
 
-  backup_retention_period         = 35 # the RDS maximum: point-in-time restore to any second in 5 weeks
-  backup_window                   = "20:00-21:00" # 01:30-02:30 IST
-  maintenance_window              = "Sun:21:30-Sun:22:30"
-  deletion_protection             = true
-  skip_final_snapshot             = false
+  backup_retention_period          = 35            # the RDS maximum: point-in-time restore to any second in 5 weeks
+  backup_window                    = "20:00-21:00" # 01:30-02:30 IST
+  maintenance_window               = "Sun:21:30-Sun:22:30"
+  deletion_protection              = true
+  skip_final_snapshot              = false
   final_snapshot_identifier_prefix = "${local.name}-final"
-  copy_tags_to_snapshot           = true
+  copy_tags_to_snapshot            = true
 
   performance_insights_enabled          = true
   performance_insights_kms_key_id       = aws_kms_key.data.arn
@@ -59,10 +60,10 @@ module "db" {
   enabled_cloudwatch_logs_exports       = ["postgresql", "upgrade"]
 
   parameters = [
-    { name = "rds.force_ssl", value = "1" },                  # TLS for every connection
-    { name = "log_min_duration_statement", value = "1000" },  # log statements slower than 1 s
+    { name = "rds.force_ssl", value = "1" },                 # TLS for every connection
+    { name = "log_min_duration_statement", value = "1000" }, # log statements slower than 1 s
     { name = "shared_preload_libraries", value = "pg_stat_statements,pgaudit", apply_method = "pending-reboot" },
-    { name = "pgaudit.log", value = "ddl,role" },            # schema and privilege changes are audited
+    { name = "pgaudit.log", value = "ddl,role" }, # schema and privilege changes are audited
   ]
 
   tags = local.tags
@@ -78,6 +79,7 @@ resource "aws_db_instance_automated_backups_replication" "dr" {
 }
 
 resource "aws_kms_key" "dr" {
+  #checkov:skip=CKV2_AWS_64:Default key policy on purpose - IAM policies in this account grant its use
   count                   = var.enable_dr ? 1 : 0
   provider                = aws.dr
   description             = "${local.name}: DR copies (backups, evidence replicas)"
@@ -114,6 +116,7 @@ resource "random_password" "cache" {
 }
 
 resource "aws_elasticache_replication_group" "cache" {
+  #checkov:skip=CKV2_AWS_50:Multi-AZ failover follows var.db_multi_az - on in prod, one node in staging to save cost
   replication_group_id       = local.name
   description                = "SUTRA shared counters"
   engine                     = "valkey"
@@ -150,6 +153,7 @@ resource "random_password" "pii_hmac" {
 }
 
 resource "aws_secretsmanager_secret" "app" {
+  #checkov:skip=CKV2_AWS_57:Values come from Terraform random_password - rotate by re-applying with a coordinated rollout
   name                    = "sutra/${var.env}/app"
   description             = "SUTRA runtime secrets (DB URL, JWT and PII-HMAC keys, cache URI, LLM key)"
   kms_key_id              = aws_kms_key.data.arn

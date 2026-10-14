@@ -34,6 +34,7 @@ ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
 
-USER nonroot
+# Distroless "nonroot", given by number so runtimes can verify it is not root.
+USER 65532:65532
 EXPOSE 3000
 CMD ["server.js"]

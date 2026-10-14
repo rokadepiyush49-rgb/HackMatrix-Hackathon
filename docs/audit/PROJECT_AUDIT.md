@@ -67,10 +67,10 @@ to trust; **Low** = clarity or hygiene.
 | 7 | Medium | M2's signal threshold (0.5%) caught 0 of 24 insider sessions on unseen worlds | `pipeline.py:102` | Behavioural signal contributed no recall | **Fixed**: 2% (ADR 021), validated end to end |
 | 8 | Medium | Revision diff left some changes unexplained (computed evidence re-scored, case resized) | `brief/revisions.py` (new) | Found in our own replay output | **Fixed** before the final run; test added |
 | 9 | Medium | Sign-out used client-side navigation (cached data of the previous persona stayed in memory); "Switch persona" did not end the session; neither was audited | `components/shell/topbar.tsx` | Shared demo laptops | **Fixed**: full navigation, `auth.logout` audit, visible button |
-| 10 | Medium | JWTs are stateless: sign-out deletes cookies but a stolen refresh token stays valid until expiry (12 h) | `core/security.py` | Session revocation | **Open**: needs a `jti` denylist |
+| 10 | Medium | JWTs are stateless: sign-out deletes cookies but a stolen refresh token stays valid until expiry (12 h) | `core/security.py` | Session revocation | **Fixed**: sign-out revokes the session (`revoked_session`, migration `e6b3a9c1d702`) |
 | 11 | Low | `api.Dockerfile` ran `train --seed 7`, but training ignores `--seed` | `docker/api.Dockerfile:39` | Misleading provenance | **Fixed** |
 | 12 | Low | The brief's premise "M5/M6 retrain on every Kestrel-Sim ingestion" is false: they load saved artifacts | `pipeline.py`, `cli.py:44` | Clarifies scope | Documented (ADR 022) |
-| 13 | Low | Live Ops routes require any signed-in user, not a capability | `api/live.py` | Demo mode only (refused in staging/prod) | Open (low risk) |
+| 13 | Low | Live Ops routes require any signed-in user, not a capability | `api/live.py` | Demo mode only (refused in staging/prod) | **Fixed**: changes need `cases:investigate` |
 | 14 | Low | Rate limiting uses `memory://` per process | `core/limiter.py` | Ineffective with several replicas | Open (documented in config) |
 | 15 | Low | The project's own `ml/reports` regenerate with timestamps on every train | `lab/heldout.py` | Noisy diffs | Open |
 
@@ -104,5 +104,5 @@ to trust; **Low** = clarity or hygiene.
 4. Measure M1/M2; recalibrate M2 only on held-out evidence and a system-level check (Medium 7).
 5. Account Aggregator as consented evidence, with a labelled synthetic FIP (new capability).
 6. Sign-out (Medium 9); Dockerfile provenance (Low 11).
-7. Still open: refresh-token revocation (10), capability on Live Ops (13), shared rate-limit store (14),
+7. Still open: shared rate-limit store (14),
    drift monitoring, checkpoint/resume for council runs.
