@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "SUTRA API, detection engine (Needle), Alibi, Brief, Mend and copilot"
 requires-python = ">=3.12,<3.13"
 dependencies = [
-  "fastapi>=0.115",
+  "fastapi>=0.143.0",
   "uvicorn[standard]>=0.30",
   "sqlalchemy>=2.0.30",
   "psycopg[binary]>=3.2",
